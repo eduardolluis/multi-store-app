@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/widgets/fake_search.dart';
 
+List<ItemsData> items = [
+  ItemsData(label: 'men'),
+  ItemsData(label: 'women'),
+  ItemsData(label: 'shoes'),
+  ItemsData(label: 'electronics'),
+  ItemsData(label: 'accessories'),
+  ItemsData(label: 'books'),
+  ItemsData(label: 'bags'),
+  ItemsData(label: 'kids'),
+  ItemsData(label: 'beauty'),
+  ItemsData(label: 'home & garden'),
+];
+
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
 
@@ -28,10 +41,31 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   Widget sideNavigator(Size size) {
-    return Container(
+    return SizedBox(
       height: size.height * 0.8,
       width: size.width * 0.2,
-      color: Colors.grey[300],
+      child: ListView.builder(
+        itemCount: items.length,
+        itemBuilder: (BuildContext context, int index) {
+          return GestureDetector(
+            onTap: () {
+              for (var element in items) {
+                element.isSelected = false;
+              }
+              setState(() {
+                items[index].isSelected = true;
+              });
+            },
+            child: Container(
+              color: items[index].isSelected == true
+                  ? Colors.white
+                  : Colors.grey[300],
+              height: 100,
+              child: Center(child: Text(items[index].label)),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -42,4 +76,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
       color: Colors.white,
     );
   }
+}
+
+class ItemsData {
+  String label;
+  bool isSelected;
+  ItemsData({required this.label, this.isSelected = false});
 }
