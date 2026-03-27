@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:multi_store_app/main_screens/category.dart';
 import 'package:multi_store_app/main_screens/home.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
@@ -9,36 +10,40 @@ class CustomerHomeScreen extends StatefulWidget {
 }
 
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
-  int _selectedIndex = 0; 
+  int _selectedIndex = 0;
   final List<Widget> _tabs = [
     HomeScreen(),
-    Center(child: Text('category'),),
-    Center(child: Text('stores'),),
-    Center(child: Text('cart screen'),),
-    Center(child: Text('profile screen'),),
+    CategoryScreen(),
+    Center(child: Text('stores')),
+    Center(child: Text('cart screen')),
+    Center(child: Text('profile screen')),
   ];
   @override
   Widget build(BuildContext context) {
-    return  Scaffold( 
+    return Scaffold(
       body: _tabs[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         elevation: 0,
-        type: BottomNavigationBarType.fixed  ,
+        type: BottomNavigationBarType.fixed,
         selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
         selectedItemColor: Colors.black,
         currentIndex: _selectedIndex,
         items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Category'),
-        BottomNavigationBarItem(icon: Icon(Icons.shop), label: 'Stores'),    
-        BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-      ],
-      onTap: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Category'),
+          BottomNavigationBarItem(icon: Icon(Icons.shop), label: 'Stores'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Cart',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
     );
   }
 }

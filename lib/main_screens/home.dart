@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:multi_store_app/minor_screens/search.dart';
+import 'package:multi_store_app/widgets/fake_search.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,52 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
         appBar: AppBar(
           elevation: 0,
           backgroundColor: Colors.white,
-          title: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SearchScreen()),
-              );
-            },
-            child: Container(
-              height: 35,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.yellow, width: 1.4),
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Icon(Icons.search, color: Colors.grey),
-                      ),
-                      Text(
-                        "What are you looking for?",
-                        style: TextStyle(color: Colors.grey, fontSize: 18),
-                      ),
-                    ],
-                  ),
-
-                  Container(
-                    alignment: Alignment.center,
-                    height: 32,
-                    width: 70,
-                    decoration: BoxDecoration(
-                      color: Colors.yellow,
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: Text(
-                      "Search",
-                      style: TextStyle(color: Colors.grey, fontSize: 18),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          title: FakeSearch(),
           bottom: TabBar(
             indicatorColor: Colors.yellow,
             indicatorWeight: 5,
