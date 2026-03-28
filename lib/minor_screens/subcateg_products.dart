@@ -13,6 +13,7 @@ class SubcategProducts extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
         leading: IconButton(
@@ -21,12 +22,28 @@ class SubcategProducts extends StatelessWidget {
           },
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
         ),
-        title: Text(
-          subcategoryName,
-          style: const TextStyle(color: Colors.black),
-        ),
+        title: AppbarTitle(title: subcategoryName),
       ),
       body: Center(child: Text(maincategoryName)),
+    );
+  }
+}
+
+class AppbarTitle extends StatelessWidget {
+  const AppbarTitle({super.key, required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: Colors.black,
+        fontFamily: 'Acme',
+        fontSize: 28,
+        letterSpacing: 1.5,
+      ),
     );
   }
 }
