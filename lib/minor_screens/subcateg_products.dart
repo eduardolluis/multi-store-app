@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:multi_store_app/widgets/appbar_widgets.dart';
 
 class SubcategProducts extends StatelessWidget {
   final String maincategoryName;
@@ -16,34 +17,10 @@ class SubcategProducts extends StatelessWidget {
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-        ),
+        leading: const AppbarBackButton(),
         title: AppbarTitle(title: subcategoryName),
       ),
       body: Center(child: Text(maincategoryName)),
-    );
-  }
-}
-
-class AppbarTitle extends StatelessWidget {
-  const AppbarTitle({super.key, required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: Colors.black,
-        fontFamily: 'Acme',
-        fontSize: 28,
-        letterSpacing: 1.5,
-      ),
     );
   }
 }
