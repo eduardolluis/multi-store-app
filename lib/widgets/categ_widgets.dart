@@ -22,15 +22,9 @@ class Slidebar extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Text(
-                  ' << ',
-                  style: TextStyle(
-                    color: Colors.brown,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 10,
-                  ),
-                ),
+                mainCategoryName == "beauty"
+                    ? const Text('')
+                    : Text(' << ', style: style),
                 Text(
                   mainCategoryName.toUpperCase(),
                   style: const TextStyle(
@@ -40,15 +34,10 @@ class Slidebar extends StatelessWidget {
                     letterSpacing: 10,
                   ),
                 ),
-                Text(
-                  ' >> ',
-                  style: TextStyle(
-                    color: Colors.brown,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 10,
-                  ),
-                ),
+
+                mainCategoryName == "men"
+                    ? const Text('')
+                    : Text(' >> ', style: style),
               ],
             ),
           ),
@@ -57,6 +46,13 @@ class Slidebar extends StatelessWidget {
     );
   }
 }
+
+const style = TextStyle(
+  color: Colors.brown,
+  fontSize: 16,
+  fontWeight: FontWeight.w600,
+  letterSpacing: 10,
+);
 
 class SubCategoryModel extends StatelessWidget {
   final String mainCategoryName;
@@ -92,13 +88,14 @@ class SubCategoryModel extends StatelessWidget {
             height: 70,
             width: 70,
             child: Image(
-              image: AssetImage('images/men/$assetName.jpg'),
+              // ✅ CORRECTO - usa el assetName directamente
+              image: AssetImage('$assetName.jpg'),
               errorBuilder: (context, error, stackTrace) {
                 return const Icon(Icons.image_not_supported, size: 40);
               },
             ),
           ),
-          Text(subCategorLabel),
+          Text(subCategorLabel, style: const TextStyle(fontSize: 12)),
         ],
       ),
     );
