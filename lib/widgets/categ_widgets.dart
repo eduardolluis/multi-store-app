@@ -88,7 +88,6 @@ class SubCategoryModel extends StatelessWidget {
             height: 70,
             width: 70,
             child: Image(
-              // ✅ CORRECTO - usa el assetName directamente
               image: AssetImage('$assetName.jpg'),
               errorBuilder: (context, error, stackTrace) {
                 return const Icon(Icons.image_not_supported, size: 40);
