@@ -22,6 +22,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         constraints: BoxConstraints.expand(),
         child: SafeArea(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'WELCOME',
@@ -33,89 +34,167 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 child: const Image(image: AssetImage('images/inapp/logo.jpg')),
               ),
               Text('SHOP', style: TextStyle(color: Colors.white, fontSize: 30)),
-              Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white38,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(50),
-                    bottomLeft: Radius.circular(50),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white38,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(50),
+                            bottomLeft: Radius.circular(50),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: const Text(
+                            "Suppliers only",
+                            style: TextStyle(
+                              color: Colors.yellowAccent,
+                              fontSize: 36,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 60,
+                        width: MediaQuery.of(context).size.width * 0.9,
+                        decoration: const BoxDecoration(
+                          color: Colors.white38,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(50),
+                            bottomLeft: Radius.circular(50),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Image(image: AssetImage('images/inapp/logo.jpg')),
+                            YellowButton(
+                              label: 'Log In',
+                              onPressed: () {},
+                              width: 0.25,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 9),
+                              child: YellowButton(
+                                label: 'Sign Up',
+                                onPressed: () {},
+                                width: 0.25,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: const Text(
-                    "Suppliers only",
-                    style: TextStyle(
-                      color: Colors.yellowAccent,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                ],
               ),
-              const SizedBox(height: 6),
-              Container(
-                height: 60,
-                width: MediaQuery.of(context).size.width * 0.9,
-                decoration: const BoxDecoration(
-                  color: Colors.white38,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(50),
-                    bottomLeft: Radius.circular(50),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Image(image: AssetImage('images/inapp/logo.jpg')),
-                    YellowButton(
-                      label: 'Log In',
-                      onPressed: () {},
-                      width: 0.25,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 9),
-                      child: YellowButton(
-                        label: 'Sign Up',
-                        onPressed: () {},
-                        width: 0.25,
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 60,
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    decoration: const BoxDecoration(
+                      color: Colors.white38,
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(50),
+                        bottomRight: Radius.circular(50),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              Container(
-                height: 60,
-                width: MediaQuery.of(context).size.width * 0.9,
-                decoration: const BoxDecoration(
-                  color: Colors.white38,
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(50),
-                    bottomRight: Radius.circular(50),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: YellowButton(
+                            label: 'Log In',
+                            onPressed: () {},
+                            width: 0.25,
+                          ),
+                        ),
+                        YellowButton(
+                          label: 'Sign Up',
+                          onPressed: () {},
+                          width: 0.25,
+                        ),
+                        Image(image: AssetImage('images/inapp/logo.jpg')),
+                      ],
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: YellowButton(
-                        label: 'Log In',
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 25),
+                child: Container(
+                  decoration: BoxDecoration(color: Colors.white38),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      GoogleFacebookLogin(
+                        label: 'Google',
                         onPressed: () {},
-                        width: 0.25,
+                        child: Image(
+                          image: AssetImage('images/inapp/google.jpg'),
+                        ),
                       ),
-                    ),
-                    YellowButton(
-                      label: 'Sign Up',
-                      onPressed: () {},
-                      width: 0.25,
-                    ),
-                    Image(image: AssetImage('images/inapp/logo.jpg')),
-                  ],
+                      GoogleFacebookLogin(
+                        label: 'Facebook',
+                        onPressed: () {},
+                        child: Image(
+                          image: AssetImage('images/inapp/facebook.jpg'),
+                        ),
+                      ),
+                      GoogleFacebookLogin(
+                        label: 'Guest',
+                        onPressed: () {},
+                        child: Icon(
+                          Icons.person,
+                          color: Colors.lightBlueAccent,
+                          size: 55,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class GoogleFacebookLogin extends StatelessWidget {
+  final String label;
+  final Function() onPressed;
+  final Widget child;
+  const GoogleFacebookLogin({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: InkWell(
+        onTap: () {},
+        child: Column(
+          children: [
+            SizedBox(height: 50, width: 50, child: child),
+            Text(label, style: TextStyle(color: Colors.white)),
+          ],
         ),
       ),
     );
