@@ -127,8 +127,149 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(
+                  height: 150,
+                  child: Image(image: AssetImage('images/inapp/logo.jpg')),
+                ),
+                ProfileHeaderLabel(headerLabel: "  Account Info  "),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Container(
+                    height: 260,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        RepeatedListTile(
+                          title: 'Email Address',
+                          subtitle: 'example@email.com',
+                          icon: Icons.email,
+                        ),
+                        YellowDivider(),
+                        RepeatedListTile(
+                          title: 'Phone No.',
+                          subtitle: '+1 234 421 132',
+                          icon: Icons.phone,
+                        ),
+                        YellowDivider(),
+                        RepeatedListTile(
+                          title: 'Address',
+                          subtitle: '123 Main Street, City, Country',
+                          icon: Icons.location_pin,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                ProfileHeaderLabel(headerLabel: "  Account Settings  "),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Container(
+                    height: 260,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        RepeatedListTile(
+                          title: "Edit Profile",
+                          subtitle: "",
+                          icon: Icons.edit,
+                          onPressed: () {},
+                        ),
+                        YellowDivider(),
+                        RepeatedListTile(
+                          title: "Change Password",
+                          icon: Icons.lock,
+                          onPressed: () {},
+                        ),
+                        YellowDivider(),
+                        RepeatedListTile(
+                          title: "Log Out",
+                          icon: Icons.logout,
+                          onPressed: () {},
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class YellowDivider extends StatelessWidget {
+  const YellowDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Divider(color: Colors.yellow, thickness: 1.2),
+    );
+  }
+}
+
+class RepeatedListTile extends StatelessWidget {
+  final String title, subtitle;
+  final IconData icon;
+  final Function()? onPressed;
+  const RepeatedListTile({
+    super.key,
+    required this.title,
+    this.subtitle = "",
+    required this.icon,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      child: ListTile(
+        title: Text(title),
+        subtitle: Text(subtitle),
+        leading: Icon(icon),
+      ),
+    );
+  }
+}
+
+class ProfileHeaderLabel extends StatelessWidget {
+  final String headerLabel;
+  const ProfileHeaderLabel({super.key, required this.headerLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            height: 40,
+            width: 50,
+            child: Divider(color: Colors.grey, thickness: 1),
+          ),
+          Text(
+            headerLabel,
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(
+            height: 40,
+            width: 50,
+            child: Divider(color: Colors.grey, thickness: 1),
           ),
         ],
       ),
