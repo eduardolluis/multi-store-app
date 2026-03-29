@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:multi_store_app/customer_screens/customer_orders.dart';
 import 'package:multi_store_app/customer_screens/customer_wishlist.dart';
 import 'package:multi_store_app/main_screens/cart.dart';
+import 'package:multi_store_app/widgets/appbar_widgets.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -102,7 +103,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => CartScreen(),
+                                    builder: (context) =>
+                                        CartScreen(back: AppbarBackButton()),
                                   ),
                                 );
                               },
