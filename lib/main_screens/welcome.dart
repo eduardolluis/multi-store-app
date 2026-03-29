@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:multi_store_app/main_screens/supplier_home.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 
@@ -77,10 +78,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 isRepeatingAnimation: true,
                 repeatForever: true,
               ),
-              // Text(
-              //   'WELCOME',
-              //   style: TextStyle(color: Colors.white, fontSize: 30),
-              // ),
+
               SizedBox(
                 height: 120,
                 width: 200,
@@ -105,7 +103,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ),
                 ),
               ),
-              // Text('SHOP', style: TextStyle(color: Colors.white, fontSize: 30)),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -149,7 +146,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             AnimatedLogo(controller: _controller),
                             YellowButton(
                               label: 'Log In',
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  '/supplier_home',
+                                );
+                              },
                               width: 0.25,
                             ),
                             Padding(
@@ -188,7 +190,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           padding: const EdgeInsets.only(left: 8.0),
                           child: YellowButton(
                             label: 'Log In',
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.pushReplacementNamed(
+                                context,
+                                '/customer_home',
+                              );
+                            },
                             width: 0.25,
                           ),
                         ),
