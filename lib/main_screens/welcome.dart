@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
@@ -29,6 +30,7 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  bool processing = false;
 
   @override
   void initState() {
@@ -237,15 +239,26 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           image: AssetImage('images/inapp/facebook.jpg'),
                         ),
                       ),
-                      GoogleFacebookLogin(
-                        label: 'Guest',
-                        onPressed: () {},
-                        child: Icon(
-                          Icons.person,
-                          color: Colors.lightBlueAccent,
-                          size: 55,
-                        ),
-                      ),
+                      processing == true
+                          ? const CircularProgressIndicator()
+                          : GoogleFacebookLogin(
+                              label: 'Guest',
+                              onPressed: () async {
+                                setState(() {
+                                  processing = true;
+                                });
+                                await FirebaseAuth.instance.signInAnonymously();
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  '/customer_home',
+                                );
+                              },
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.lightBlueAccent,
+                                size: 55,
+                              ),
+                            ),
                     ],
                   ),
                 ),
@@ -295,7 +308,7 @@ class GoogleFacebookLogin extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: InkWell(
-        onTap: () {},
+        onTap: onPressed,
         child: Column(
           children: [
             SizedBox(height: 50, width: 50, child: child),
