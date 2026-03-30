@@ -109,3 +109,12 @@ var textFormDecoration = InputDecoration(
     borderSide: BorderSide(color: Colors.deepPurpleAccent, width: 2),
   ),
 );
+
+extension EmailValidator on String {
+  bool isValidEmail() {
+    final email = trim();
+    return RegExp(
+      r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+    ).hasMatch(email);
+  }
+}

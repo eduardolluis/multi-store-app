@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/widgets/auth_widgets.dart';
 
+// final TextEditingController _nameController = TextEditingController();
+// final TextEditingController _emailController = TextEditingController();
+// final TextEditingController _passwordController = TextEditingController();
+
 class CustomerSignup extends StatefulWidget {
   const CustomerSignup({super.key});
 
@@ -10,6 +14,10 @@ class CustomerSignup extends StatefulWidget {
 }
 
 class _CustomerSignupState extends State<CustomerSignup> {
+  late String name;
+  late String email;
+  late String password;
+
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool passwordVisibility = false;
   @override
@@ -93,6 +101,10 @@ class _CustomerSignupState extends State<CustomerSignup> {
                             return null;
                           }
                         },
+                        onChanged: (value) {
+                          name = value;
+                        },
+                        // controller: _nameController,
                         decoration: textFormDecoration.copyWith(
                           labelText: "Full Name",
                           hintText: "Enter Your Full Name",
@@ -111,6 +123,10 @@ class _CustomerSignupState extends State<CustomerSignup> {
                             return null;
                           }
                         },
+                        onChanged: (value) {
+                          email = value;
+                        },
+                        // controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: textFormDecoration.copyWith(
                           labelText: "Email Address",
@@ -129,6 +145,10 @@ class _CustomerSignupState extends State<CustomerSignup> {
                             return null;
                           }
                         },
+                        onChanged: (value) {
+                          password = value;
+                        },
+                        //controller: _passwordController,
                         decoration: textFormDecoration.copyWith(
                           suffixIcon: IconButton(
                             onPressed: () {
@@ -159,6 +179,14 @@ class _CustomerSignupState extends State<CustomerSignup> {
                         if (_formKey.currentState!.validate()) {
                           if (kDebugMode) {
                             print("valid");
+                            setState(() {
+                              //    name = _nameController.text;
+                              //    email = _emailController.text;
+                              //    password = _passwordController.text;
+                            });
+                            print(name);
+                            print(email);
+                            print(password);
                           }
                         } else {
                           if (kDebugMode) {
@@ -175,13 +203,5 @@ class _CustomerSignupState extends State<CustomerSignup> {
         ),
       ),
     );
-  }
-}
-
-extension EmailValidator on String {
-  bool isValidEmail() {
-    return RegExp(
-      r'^([a-zA-Z0-9]+)([\-\_\.])([a-zA-Z0-9]*)([@])([a-zA-Z0-9]{2,})([\.])([a-zA-Z0-9]{2,3})$',
-    ).hasMatch(this);
   }
 }
