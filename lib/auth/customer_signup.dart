@@ -1,5 +1,9 @@
+import 'dart:io';
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:multi_store_app/widgets/auth_widgets.dart';
 import 'package:multi_store_app/widgets/snackbar_widget.dart';
 
@@ -20,6 +24,50 @@ class _CustomerSignupState extends State<CustomerSignup> {
       GlobalKey<ScaffoldMessengerState>();
 
   bool passwordVisibility = false;
+
+  final ImagePicker _picker = ImagePicker();
+
+  XFile? _imageFile;
+  dynamic _pickedImageError;
+
+  void _pickImageFromCamera() async {
+    try {
+      final pickedImage = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxHeight: 300,
+        maxWidth: 300,
+        imageQuality: 95,
+      );
+      setState(() {
+        _imageFile = pickedImage;
+      });
+    } catch (e) {
+      setState(() {
+        _pickedImageError = e;
+      });
+      print(_pickedImageError);
+    }
+  }
+
+  void _pickImageFromGallery() async {
+    try {
+      final pickedImage = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxHeight: 300,
+        maxWidth: 300,
+        imageQuality: 95,
+      );
+      setState(() {
+        _imageFile = pickedImage;
+      });
+    } catch (e) {
+      setState(() {
+        _pickedImageError = e;
+      });
+      print(_pickedImageError);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ScaffoldMessenger(
@@ -47,6 +95,9 @@ class _CustomerSignupState extends State<CustomerSignup> {
                             child: CircleAvatar(
                               radius: 60,
                               backgroundColor: Colors.purpleAccent,
+                              backgroundImage: _imageFile == null
+                                  ? null
+                                  : FileImage(File(_imageFile!.path)),
                             ),
                           ),
                           Column(
@@ -61,9 +112,7 @@ class _CustomerSignupState extends State<CustomerSignup> {
                                 ),
                                 child: IconButton(
                                   onPressed: () {
-                                    if (kDebugMode) {
-                                      print('pick image from camera');
-                                    }
+                                    _pickImageFromCamera();
                                   },
                                   icon: Icon(
                                     Icons.camera_alt,
@@ -82,9 +131,7 @@ class _CustomerSignupState extends State<CustomerSignup> {
                                 ),
                                 child: IconButton(
                                   onPressed: () {
-                                    if (kDebugMode) {
-                                      print('pick image from gallery');
-                                    }
+                                    _pickImageFromGallery();
                                   },
                                   icon: Icon(Icons.photo, color: Colors.white),
                                 ),
@@ -180,10 +227,22 @@ class _CustomerSignupState extends State<CustomerSignup> {
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
                             if (kDebugMode) {
+                              if (_imageFile != null) {
+                                print('image pickded');
+                              } else {
+                                MyMessageHandler.showSnackBar(
+                                  _scaffoldKey,
+                                  "Please Pick An Image",
+                                );
+                              }
                               print("valid");
                               print(name);
                               print(email);
                               print(password);
+                              _formKey.currentState!.reset();
+                              setState(() {
+                                _imageFile = null;
+                              });
                             }
                           } else {
                             MyMessageHandler.showSnackBar(
