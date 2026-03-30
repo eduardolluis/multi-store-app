@@ -105,7 +105,9 @@ class _CustomerSignupState extends State<CustomerSignup> {
                         validator: (value) {
                           if (value!.isEmpty) {
                             return "Please Enter Your Email Address";
-                          } else {
+                          } else if (value.isValidEmail() == false) {
+                            return "Please Enter A Valid Email Address";
+                          } else if (value.isValidEmail() == true) {
                             return null;
                           }
                         },
@@ -173,5 +175,13 @@ class _CustomerSignupState extends State<CustomerSignup> {
         ),
       ),
     );
+  }
+}
+
+extension EmailValidator on String {
+  bool isValidEmail() {
+    return RegExp(
+      r'^([a-zA-Z0-9]+)([\-\_\.])([a-zA-Z0-9]*)([@])([a-zA-Z0-9]{2,})([\.])([a-zA-Z0-9]{2,3})$',
+    ).hasMatch(this);
   }
 }
