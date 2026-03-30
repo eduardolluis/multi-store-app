@@ -43,3 +43,19 @@ android {
 flutter {
     source = "../.."
 }
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+
+dependencies {
+
+  // Import the Firebase BoM
+
+  implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
+
+
+  // TODO: Add the dependencies for Firebase products you want to use
+
+  // When using the BoM, don't specify versions in Firebase dependencies
+
+  // https://firebase.google.com/docs/android/setup#available-libraries
+
+}
