@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:multi_store_app/auth/customer_login.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -294,7 +295,12 @@ class _CustomerSignupState extends State<CustomerSignup> {
                       HaveAccount(
                         haveAccount: "Already Have An Account?",
                         actionLabel: "Log In",
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(
+                            context,
+                            '/customer_login',
+                          );
+                        },
                       ),
                       processing == true
                           ? const CircularProgressIndicator()
