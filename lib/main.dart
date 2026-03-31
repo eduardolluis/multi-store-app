@@ -2,6 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/auth/customer_login.dart';
 import 'package:multi_store_app/auth/customer_signup.dart';
+import 'package:multi_store_app/auth/supplier_login.dart';
+import 'package:multi_store_app/auth/supplier_signup.dart';
 import 'package:multi_store_app/main_screens/customer_home.dart';
 import 'package:multi_store_app/main_screens/supplier_home.dart';
 import 'package:multi_store_app/main_screens/welcome.dart';
@@ -38,6 +40,8 @@ class MyApp extends StatelessWidget {
         '/supplier_home': (context) => SupplierHomeScreen(),
         '/customer_signup': (context) => CustomerSignup(),
         '/customer_login': (context) => CustomerLogin(),
+        '/supplier_signup': (context) => SupplierRegister(),
+        '/supplier_login': (context) => SupplierLogin(),
       },
     );
   }

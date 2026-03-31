@@ -7,18 +7,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:multi_store_app/widgets/auth_widgets.dart';
 import 'package:multi_store_app/widgets/snackbar_widget.dart';
 
-class CustomerSignup extends StatefulWidget {
-  const CustomerSignup({super.key});
+class SupplierRegister extends StatefulWidget {
+  const SupplierRegister({super.key});
 
   @override
-  State<CustomerSignup> createState() => _CustomerSignupState();
+  State<SupplierRegister> createState() => _SupplierRegisterState();
 }
 
-class _CustomerSignupState extends State<CustomerSignup> {
-  late String name;
+class _SupplierRegisterState extends State<SupplierRegister> {
+  late String storeName;
   late String email;
   late String password;
-  late String profileImage;
+  late String storeLogo;
   late String _uid;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -33,8 +33,8 @@ class _CustomerSignupState extends State<CustomerSignup> {
   XFile? _imageFile;
   dynamic _pickedImageError;
 
-  CollectionReference customers = FirebaseFirestore.instance.collection(
-    'customers',
+  CollectionReference suppliers = FirebaseFirestore.instance.collection(
+    'suppliers',
   );
 
   void _pickImageFromCamera() async {
@@ -106,14 +106,14 @@ class _CustomerSignupState extends State<CustomerSignup> {
           .from('images')
           .upload(fileName, File(_imageFile!.path));
 
-      profileImage = supabase.storage.from('images').getPublicUrl(fileName);
+      storeLogo = supabase.storage.from('images').getPublicUrl(fileName);
 
-      await customers.doc(_uid).set({
-        'name': name,
+      await suppliers.doc(_uid).set({
+        'storeName': storeName,
         'email': email,
-        'profileImage': profileImage,
+        'storeLogo': storeLogo,
         'phone': "",
-        'address': "",
+        'coverImage': "",
         'cid': _uid,
       });
 
@@ -123,7 +123,7 @@ class _CustomerSignupState extends State<CustomerSignup> {
         processing = false;
       });
 
-      Navigator.pushReplacementNamed(context, '/customer_login');
+      Navigator.pushReplacementNamed(context, '/supplier_login');
     } on FirebaseAuthException catch (e) {
       setState(() => processing = false);
 
@@ -226,7 +226,7 @@ class _CustomerSignupState extends State<CustomerSignup> {
                             }
                           },
                           onChanged: (value) {
-                            name = value;
+                            storeName = value;
                           },
                           // controller: _nameController,
                           decoration: textFormDecoration.copyWith(
