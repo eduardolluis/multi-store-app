@@ -1,7 +1,7 @@
 import 'dart:io';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:multi_store_app/widgets/auth_widgets.dart';
@@ -18,17 +18,24 @@ class _CustomerSignupState extends State<CustomerSignup> {
   late String name;
   late String email;
   late String password;
+  late String profileImage;
+  late String _uid;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
       GlobalKey<ScaffoldMessengerState>();
 
   bool passwordVisibility = false;
+  bool procesing = false;
 
   final ImagePicker _picker = ImagePicker();
 
   XFile? _imageFile;
   dynamic _pickedImageError;
+
+  CollectionReference customers = FirebaseFirestore.instance.collection(
+    'customers',
+  );
 
   void _pickImageFromCamera() async {
     try {
@@ -69,42 +76,67 @@ class _CustomerSignupState extends State<CustomerSignup> {
   }
 
   void signUp() async {
-    if (_formKey.currentState!.validate()) {
-      if (_imageFile != null) {
-        try {
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-            email: email,
-            password: password,
-          );
+    if (!_formKey.currentState!.validate()) {
+      MyMessageHandler.showSnackBar(_scaffoldKey, "Fill all fields");
+      return;
+    }
 
-          _formKey.currentState!.reset();
-          setState(() {
-            _imageFile = null;
-          });
-          Navigator.pushReplacementNamed(context, '/customer_home');
-        } on FirebaseAuthException catch (e) {
-          if (e.code == 'weak-password') {
-            MyMessageHandler.showSnackBar(
-              _scaffoldKey,
-              "The password provided is too weak.",
-            );
-          } else if (e.code == 'email-already-in-use') {
-            MyMessageHandler.showSnackBar(
-              _scaffoldKey,
-              "The account already exists for that email.",
-            );
-          } else {
-            MyMessageHandler.showSnackBar(
-              _scaffoldKey,
-              "An error occurred. Please try again.",
-            );
-          }
-        }
+    if (_imageFile == null) {
+      MyMessageHandler.showSnackBar(_scaffoldKey, "Pick an image");
+      return;
+    }
+
+    setState(() {
+      procesing = true;
+    });
+
+    try {
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      _uid = FirebaseAuth.instance.currentUser!.uid;
+
+      final supabase = Supabase.instance.client;
+
+      final fileName = '${_uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      await supabase.storage
+          .from('images')
+          .upload(fileName, File(_imageFile!.path));
+
+      profileImage = supabase.storage.from('images').getPublicUrl(fileName);
+
+      await customers.doc(_uid).set({
+        'name': name,
+        'email': email,
+        'profileImage': profileImage,
+        'phone': "",
+        'address': "",
+        'cid': _uid,
+      });
+
+      _formKey.currentState!.reset();
+      setState(() {
+        _imageFile = null;
+        procesing = false;
+      });
+
+      Navigator.pushReplacementNamed(context, '/customer_home');
+    } on FirebaseAuthException catch (e) {
+      setState(() => procesing = false);
+
+      if (e.code == 'weak-password') {
+        MyMessageHandler.showSnackBar(_scaffoldKey, "Weak password");
+      } else if (e.code == 'email-already-in-use') {
+        MyMessageHandler.showSnackBar(_scaffoldKey, "Email already in use");
       } else {
-        MyMessageHandler.showSnackBar(_scaffoldKey, "Please Pick An Image");
+        MyMessageHandler.showSnackBar(_scaffoldKey, "Auth error");
       }
-    } else {
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Please fill all the fields");
+    } catch (e) {
+      setState(() => procesing = false);
+      MyMessageHandler.showSnackBar(_scaffoldKey, "Error: $e");
     }
   }
 

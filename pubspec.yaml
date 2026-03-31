@@ -40,6 +40,8 @@ dependencies:
   cloud_firestore: ^6.2.0
   firebase_storage: ^13.1.0
   firebase_core: ^4.6.0
+  supabase_flutter: ^2.12.2
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +78,8 @@ flutter:
     - images/homegarden/
     - images/accessories/
     - images/bags/
+
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
