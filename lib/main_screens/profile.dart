@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/customer_screens/customer_orders.dart';
 import 'package:multi_store_app/customer_screens/customer_wishlist.dart';
@@ -254,12 +256,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                   YellowDivider(),
                                   RepeatedListTile(
-                                    title: "Log Out",
+                                    title: 'Log Out',
                                     icon: Icons.logout,
-                                    onPressed: () {
-                                      Navigator.pushReplacementNamed(
-                                        context,
-                                        '/welcome_screen',
+                                    onPressed: () async {
+                                      MyAlertDialog.showMyDialog(
+                                        context: context,
+                                        title: "Log Out",
+                                        content:
+                                            "Are you sure you want to log out?",
+                                        tabNo: () {
+                                          Navigator.pop(context);
+                                        },
+                                        tabYes: () async {
+                                          await FirebaseAuth.instance.signOut();
+                                          Navigator.pop(context);
+                                          Navigator.pushReplacementNamed(
+                                            context,
+                                            '/welcome_screen',
+                                          );
+                                        },
                                       );
                                     },
                                   ),
@@ -274,6 +289,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MyAlertDialog {
+  static void showMyDialog({
+    required BuildContext context,
+    required String title,
+    required String content,
+    required Function() tabNo,
+    required Function() tabYes,
+  }) {
+    showCupertinoDialog(
+      context: context,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          CupertinoDialogAction(child: const Text("No"), onPressed: tabNo),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: tabYes,
+            child: const Text("Yes"),
           ),
         ],
       ),
