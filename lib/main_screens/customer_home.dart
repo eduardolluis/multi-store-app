@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/main_screens/cart.dart';
 import 'package:multi_store_app/main_screens/category.dart';
@@ -19,7 +20,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     CategoryScreen(),
     StoresScreen(),
     CartScreen(),
-    ProfileScreen(),
+    ProfileScreen(documentId: FirebaseAuth.instance.currentUser!.uid),
   ];
   @override
   Widget build(BuildContext context) {

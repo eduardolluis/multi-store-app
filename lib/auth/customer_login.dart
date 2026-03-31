@@ -81,7 +81,6 @@ class _CustomerLoginState extends State<CustomerLogin> {
                       AuthHeaderLabel(headerLabel: 'Log In'),
                       const SizedBox(height: 50),
 
-                      /// EMAIL
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         child: TextFormField(
@@ -104,7 +103,6 @@ class _CustomerLoginState extends State<CustomerLogin> {
                         ),
                       ),
 
-                      /// PASSWORD
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         child: TextFormField(
@@ -138,7 +136,6 @@ class _CustomerLoginState extends State<CustomerLogin> {
                         ),
                       ),
 
-                      /// FORGOT PASSWORD
                       TextButton(
                         onPressed: () {},
                         child: const Text(
@@ -150,7 +147,6 @@ class _CustomerLoginState extends State<CustomerLogin> {
                         ),
                       ),
 
-                      /// SIGN UP
                       HaveAccount(
                         haveAccount: "Don't Have An Account? ",
                         actionLabel: "Sign Up",
@@ -164,9 +160,12 @@ class _CustomerLoginState extends State<CustomerLogin> {
 
                       const SizedBox(height: 20),
 
-                      /// BUTTON / LOADING
                       processing
-                          ? const Center(child: CircularProgressIndicator())
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.purple,
+                              ),
+                            )
                           : AuthButton(
                               mainButtonLabel: 'Log In',
                               onPressed: logIn,

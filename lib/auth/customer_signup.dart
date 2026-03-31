@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:multi_store_app/auth/customer_login.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -303,7 +302,9 @@ class _CustomerSignupState extends State<CustomerSignup> {
                         },
                       ),
                       processing == true
-                          ? const CircularProgressIndicator()
+                          ? const CircularProgressIndicator(
+                              color: Colors.purple,
+                            )
                           : AuthButton(
                               mainButtonLabel: 'Sign Up',
                               onPressed: () {
