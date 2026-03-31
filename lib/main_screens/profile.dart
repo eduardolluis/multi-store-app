@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/customer_screens/customer_orders.dart';
 import 'package:multi_store_app/customer_screens/customer_wishlist.dart';
@@ -82,16 +81,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    CircleAvatar(
-                                      radius: 50,
-                                      backgroundImage: NetworkImage(
-                                        data['profileImage'],
-                                      ),
-                                    ),
+                                    data['profileImage'] == ''
+                                        ? const CircleAvatar(
+                                            radius: 50,
+                                            backgroundImage: AssetImage(
+                                              'images/inapp/guest.jpg',
+                                            ),
+                                          )
+                                        : CircleAvatar(
+                                            radius: 50,
+                                            backgroundImage: NetworkImage(
+                                              data['profileImage'],
+                                            ),
+                                          ),
                                     Padding(
                                       padding: const EdgeInsets.only(left: 25),
                                       child: Text(
-                                        data['name'].toString().toUpperCase(),
+                                        data['name'] == ''
+                                            ? "GUEST"
+                                            : data['name']
+                                                  .toString()
+                                                  .toUpperCase(),
                                         style: TextStyle(
                                           fontSize: 24,
                                           fontWeight: FontWeight.w600,
@@ -248,19 +258,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       children: [
                                         RepeatedListTile(
                                           title: 'Email Address',
-                                          subtitle: data['email'],
+                                          subtitle: data['email'] == ''
+                                              ? 'Example@email.com'
+                                              : data['email']
+                                                    .toString()
+                                                    .toLowerCase(),
                                           icon: Icons.email,
                                         ),
                                         YellowDivider(),
                                         RepeatedListTile(
                                           title: 'Phone No.',
-                                          subtitle: data['phone'],
+                                          subtitle: data['phone'] == ''
+                                              ? '+1234567890'
+                                              : data['phone'],
                                           icon: Icons.phone,
                                         ),
                                         YellowDivider(),
                                         RepeatedListTile(
                                           title: 'Address',
-                                          subtitle: data['address'],
+                                          subtitle: data['address'] == ''
+                                              ? 'No. 123, ABC Street, City, Country'
+                                              : data['address'],
                                           icon: Icons.location_pin,
                                         ),
                                       ],

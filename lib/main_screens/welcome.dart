@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
@@ -31,6 +32,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   bool processing = false;
+
+  CollectionReference customers = FirebaseFirestore.instance.collection(
+    'customers',
+  );
+
+  late String _uid = _uid = FirebaseAuth.instance.currentUser!.uid;
 
   @override
   void initState() {
@@ -252,7 +259,23 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 setState(() {
                                   processing = true;
                                 });
-                                await FirebaseAuth.instance.signInAnonymously();
+                                await FirebaseAuth.instance
+                                    .signInAnonymously()
+                                    .whenComplete(() async {
+                                      _uid = FirebaseAuth
+                                          .instance
+                                          .currentUser!
+                                          .uid;
+                                      await customers.doc(_uid).set({
+                                        'name': '',
+                                        'email': '',
+                                        'profileImage': '',
+                                        'phone': "",
+                                        'address': "",
+                                        'cid': '',
+                                      });
+                                    });
+
                                 Navigator.pushReplacementNamed(
                                   context,
                                   '/customer_home',
