@@ -26,7 +26,7 @@ class _CustomerSignupState extends State<CustomerSignup> {
       GlobalKey<ScaffoldMessengerState>();
 
   bool passwordVisibility = false;
-  bool procesing = false;
+  bool processing = false;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -87,7 +87,7 @@ class _CustomerSignupState extends State<CustomerSignup> {
     }
 
     setState(() {
-      procesing = true;
+      processing = true;
     });
 
     try {
@@ -120,22 +120,25 @@ class _CustomerSignupState extends State<CustomerSignup> {
       _formKey.currentState!.reset();
       setState(() {
         _imageFile = null;
-        procesing = false;
+        processing = false;
       });
 
       Navigator.pushReplacementNamed(context, '/customer_home');
     } on FirebaseAuthException catch (e) {
-      setState(() => procesing = false);
+      setState(() => processing = false);
 
       if (e.code == 'weak-password') {
         MyMessageHandler.showSnackBar(_scaffoldKey, "Weak password");
       } else if (e.code == 'email-already-in-use') {
         MyMessageHandler.showSnackBar(_scaffoldKey, "Email already in use");
+        setState(() => processing = false);
       } else {
         MyMessageHandler.showSnackBar(_scaffoldKey, "Auth error");
+        setState(() => processing = false);
       }
+      setState(() => processing = false);
     } catch (e) {
-      setState(() => procesing = false);
+      setState(() => processing = false);
       MyMessageHandler.showSnackBar(_scaffoldKey, "Error: $e");
     }
   }
@@ -293,12 +296,14 @@ class _CustomerSignupState extends State<CustomerSignup> {
                         actionLabel: "Log In",
                         onPressed: () {},
                       ),
-                      AuthButton(
-                        mainButtonLabel: 'Sign Up',
-                        onPressed: () {
-                          signUp();
-                        },
-                      ),
+                      processing == true
+                          ? const CircularProgressIndicator()
+                          : AuthButton(
+                              mainButtonLabel: 'Sign Up',
+                              onPressed: () {
+                                signUp();
+                              },
+                            ),
                     ],
                   ),
                 ),
