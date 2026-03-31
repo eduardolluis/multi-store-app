@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -64,6 +65,46 @@ class _CustomerSignupState extends State<CustomerSignup> {
         _pickedImageError = e;
       });
       print(_pickedImageError);
+    }
+  }
+
+  void signUp() async {
+    if (_formKey.currentState!.validate()) {
+      if (_imageFile != null) {
+        try {
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+
+          _formKey.currentState!.reset();
+          setState(() {
+            _imageFile = null;
+          });
+          Navigator.pushReplacementNamed(context, '/customer_home');
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'weak-password') {
+            MyMessageHandler.showSnackBar(
+              _scaffoldKey,
+              "The password provided is too weak.",
+            );
+          } else if (e.code == 'email-already-in-use') {
+            MyMessageHandler.showSnackBar(
+              _scaffoldKey,
+              "The account already exists for that email.",
+            );
+          } else {
+            MyMessageHandler.showSnackBar(
+              _scaffoldKey,
+              "An error occurred. Please try again.",
+            );
+          }
+        }
+      } else {
+        MyMessageHandler.showSnackBar(_scaffoldKey, "Please Pick An Image");
+      }
+    } else {
+      MyMessageHandler.showSnackBar(_scaffoldKey, "Please fill all the fields");
     }
   }
 
@@ -175,7 +216,6 @@ class _CustomerSignupState extends State<CustomerSignup> {
                           onChanged: (value) {
                             email = value;
                           },
-                          // controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           decoration: textFormDecoration.copyWith(
                             labelText: "Email Address",
@@ -224,31 +264,7 @@ class _CustomerSignupState extends State<CustomerSignup> {
                       AuthButton(
                         mainButtonLabel: 'Sign Up',
                         onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            if (kDebugMode) {
-                              if (_imageFile != null) {
-                                print('image pickded');
-                              } else {
-                                MyMessageHandler.showSnackBar(
-                                  _scaffoldKey,
-                                  "Please Pick An Image",
-                                );
-                              }
-                              print("valid");
-                              print(name);
-                              print(email);
-                              print(password);
-                              _formKey.currentState!.reset();
-                              setState(() {
-                                _imageFile = null;
-                              });
-                            }
-                          } else {
-                            MyMessageHandler.showSnackBar(
-                              _scaffoldKey,
-                              "Please fill all the fields",
-                            );
-                          }
+                          signUp();
                         },
                       ),
                     ],

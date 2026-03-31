@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:multi_store_app/customer_screens/customer_orders.dart';
 import 'package:multi_store_app/customer_screens/customer_wishlist.dart';
 import 'package:multi_store_app/main_screens/cart.dart';
+import 'package:multi_store_app/widgets/alert_dialog.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -289,32 +290,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class MyAlertDialog {
-  static void showMyDialog({
-    required BuildContext context,
-    required String title,
-    required String content,
-    required Function() tabNo,
-    required Function() tabYes,
-  }) {
-    showCupertinoDialog(
-      context: context,
-      builder: (BuildContext context) => CupertinoAlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          CupertinoDialogAction(child: const Text("No"), onPressed: tabNo),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: tabYes,
-            child: const Text("Yes"),
           ),
         ],
       ),
