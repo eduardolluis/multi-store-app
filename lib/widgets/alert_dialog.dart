@@ -15,7 +15,7 @@ class MyAlertDialog {
         title: Text(title),
         content: Text(content),
         actions: [
-          CupertinoDialogAction(child: const Text("No"), onPressed: tabNo),
+          CupertinoDialogAction(onPressed: tabNo, child: const Text("No")),
           CupertinoDialogAction(
             isDestructiveAction: true,
             onPressed: tabYes,
