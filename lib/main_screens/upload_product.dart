@@ -113,33 +113,21 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                 children: [
                   Row(
                     children: [
-                      Stack(
-                        children: [
-                          Container(
-                            color: Colors.blueGrey[200],
-                            height: MediaQuery.of(context).size.width * 0.5,
-                            width: MediaQuery.of(context).size.width * 0.5,
-                            child: Center(
-                              child:
-                                  imagesFilesList == null ||
-                                      imagesFilesList!.isEmpty
-                                  ? const Text(
-                                      "You have not \n \n picked any products yet!",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 16),
-                                    )
-                                  : previewImages(),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              setState(() {
-                                imagesFilesList = [];
-                              });
-                            },
-                            icon: const Icon(Icons.delete_forever),
-                          ),
-                        ],
+                      Container(
+                        color: Colors.blueGrey[200],
+                        height: MediaQuery.of(context).size.width * 0.5,
+                        width: MediaQuery.of(context).size.width * 0.5,
+                        child: Center(
+                          child:
+                              imagesFilesList == null ||
+                                  imagesFilesList!.isEmpty
+                              ? const Text(
+                                  "You have not \n \n picked any products yet!",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 16),
+                                )
+                              : previewImages(),
+                        ),
                       ),
                     ],
                   ),
@@ -243,9 +231,19 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
             Padding(
               padding: const EdgeInsets.only(right: 10),
               child: FloatingActionButton(
-                onPressed: pickProductImages,
+                onPressed: imagesFilesList!.isEmpty
+                    ? () {
+                        pickProductImages();
+                      }
+                    : () {
+                        setState(() {
+                          imagesFilesList = [];
+                        });
+                      },
                 backgroundColor: Colors.yellow,
-                child: const Icon(Icons.photo_library, color: Colors.black),
+                child: imagesFilesList!.isEmpty
+                    ? Icon(Icons.photo_library, color: Colors.black)
+                    : const Icon(Icons.delete_forever, color: Colors.black),
               ),
             ),
             FloatingActionButton(
