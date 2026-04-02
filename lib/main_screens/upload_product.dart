@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:multi_store_app/utilities/categ_list.dart';
 import 'package:multi_store_app/widgets/snackbar_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 class UploadProductScreen extends StatefulWidget {
   const UploadProductScreen({super.key});
@@ -23,6 +24,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
   late int quantity;
   late String productName;
   late String productDescription;
+  late String productId;
 
   String? mainCategoryValue;
   String? subCategoryValue;
@@ -94,7 +96,9 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
     );
   }
 
-  void uploadImages() async {
+  bool isLoading = false;
+
+  Future<void> uploadImages() async {
     if (!_formKey.currentState!.validate()) {
       MyMessageHandler.showSnackBar(_scaffoldKey, "Fill all fields");
       return;
@@ -142,21 +146,22 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
     if (imagesUrlList.isNotEmpty) {
       final firestore = FirebaseFirestore.instance;
 
-      final docRef = firestore.collection('products').doc();
+      productId = const Uuid().v4();
+
+      final docRef = firestore.collection('products').doc(productId);
 
       await docRef
           .set({
-            'id': docRef.id,
-            'productName': productName,
-            'productDescription': productDescription,
-            'price': price,
+            "productId": productId,
             'quantity': quantity,
             'category': mainCategoryValue,
             'subcategory': subCategoryValue,
+            'price': price,
+            'productName': productName,
+            'productDescription': productDescription,
             'images': imagesUrlList,
             'discount': 0,
             'cid': FirebaseAuth.instance.currentUser!.uid,
-            'createdAt': FieldValue.serverTimestamp(),
           })
           .whenComplete(() {
             setState(() {
@@ -171,77 +176,9 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
     }
   }
 
-  bool isLoading = false;
-
-  // void uploadProduct() async {
-  //   if (!_formKey.currentState!.validate()) {
-  //     MyMessageHandler.showSnackBar(_scaffoldKey, "Fill all fields");
-  //     return;
-  //   }
-
-  //   if (imagesFilesList.isEmpty) {
-  //     MyMessageHandler.showSnackBar(_scaffoldKey, "Pick images first");
-  //     return;
-  //   }
-
-  //   _formKey.currentState!.save();
-
-  //   setState(() => isLoading = true);
-
-  //   final supabase = Supabase.instance.client;
-  //   final firestore = FirebaseFirestore.instance;
-
-  //   try {
-  //     imagesUrlList.clear();
-
-  //     final uploadFutures = imagesFilesList.map((image) async {
-  //       final file = File(image.path);
-
-  //       final fileName =
-  //           "${DateTime.now().millisecondsSinceEpoch}_${image.name}";
-
-  //       final path = 'products/$fileName';
-
-  //       await supabase.storage.from('products').upload(path, file);
-
-  //       return supabase.storage.from('products').getPublicUrl(path);
-  //     }).toList();
-
-  //     imagesUrlList = await Future.wait(uploadFutures);
-
-  //     final docRef = firestore.collection('products').doc();
-
-  //     await docRef.set({
-  //       'id': docRef.id,
-  //       'productName': productName,
-  //       'productDescription': productDescription,
-  //       'price': price,
-  //       'quantity': quantity,
-  //       'category': mainCategoryValue,
-  //       'subcategory': subCategoryValue,
-  //       'images': imagesUrlList,
-  //       'discount': 0,
-  //       'cid': FirebaseAuth.instance.currentUser!.uid,
-  //       'createdAt': FieldValue.serverTimestamp(),
-  //     });
-
-  //     MyMessageHandler.showSnackBar(_scaffoldKey, "Uploaded!");
-
-  //     setState(() {
-  //       imagesFilesList.clear();
-  //       imagesUrlList.clear();
-  //       mainCategoryValue = null;
-  //       subCategoryValue = null;
-  //     });
-
-  //     _formKey.currentState!.reset();
-  //   } catch (e) {
-  //     print("Upload error: $e");
-  //     MyMessageHandler.showSnackBar(_scaffoldKey, "Upload failed");
-  //   } finally {
-  //     setState(() => isLoading = false);
-  //   }
-  // }
+  void uploadProduct() async {
+    await uploadImages().whenComplete(() => uploadData());
+  }
 
   @override
   Widget build(BuildContext context) {
