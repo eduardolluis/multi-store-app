@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:multi_store_app/utilities/categ_list.dart';
@@ -92,42 +94,79 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
     );
   }
 
+  bool isLoading = false;
+
   void uploadProduct() async {
-    if (_formKey.currentState!.validate()) {
-      if (imagesFilesList.isEmpty) {
-        MyMessageHandler.showSnackBar(_scaffoldKey, "Pick images first");
-        return;
-      }
+    if (!_formKey.currentState!.validate()) {
+      MyMessageHandler.showSnackBar(_scaffoldKey, "Fill all fields");
+      return;
+    }
 
-      _formKey.currentState!.save();
+    if (imagesFilesList.isEmpty) {
+      MyMessageHandler.showSnackBar(_scaffoldKey, "Pick images first");
+      return;
+    }
 
-      try {
-        final supabase = Supabase.instance.client;
+    _formKey.currentState!.save();
 
-        for (var image in imagesFilesList) {
-          final file = File(image.path);
-          final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+    setState(() => isLoading = true);
 
-          final path = 'products/$fileName';
+    final supabase = Supabase.instance.client;
+    final firestore = FirebaseFirestore.instance;
+    final user = FirebaseAuth.instance.currentUser;
 
-          await supabase.storage.from('products').upload(path, file);
+    try {
+      imagesUrlList.clear();
 
-          final imageUrl = supabase.storage.from('products').getPublicUrl(path);
+      // 🚀 SUBIDA EN PARALELO
+      final uploadFutures = imagesFilesList.map((image) async {
+        final file = File(image.path);
 
-          imagesUrlList.add(imageUrl);
-        }
-      } catch (e) {
-        print(e);
-      }
+        final fileName =
+            "${DateTime.now().millisecondsSinceEpoch}_${image.name}";
+
+        final path = 'products/$fileName';
+
+        await supabase.storage.from('products').upload(path, file);
+
+        return supabase.storage.from('products').getPublicUrl(path);
+      }).toList();
+
+      imagesUrlList = await Future.wait(uploadFutures);
+
+      // 🆔 ID CONTROLADO
+      final docRef = firestore.collection('products').doc();
+
+      await docRef.set({
+        'id': docRef.id,
+        'productName': productName,
+        'productDescription': productDescription,
+        'price': price,
+        'quantity': quantity,
+        'category': mainCategoryValue,
+        'subcategory': subCategoryValue,
+        'images': imagesUrlList,
+        'discount': 0,
+        'cid': user?.uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      MyMessageHandler.showSnackBar(_scaffoldKey, "Uploaded!");
+
+      // 🔄 RESET LIMPIO
       setState(() {
         imagesFilesList.clear();
+        imagesUrlList.clear();
         mainCategoryValue = null;
         subCategoryValue = null;
       });
 
       _formKey.currentState!.reset();
-    } else {
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Fill all fields");
+    } catch (e) {
+      print("Upload error: $e");
+      MyMessageHandler.showSnackBar(_scaffoldKey, "Upload failed");
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
