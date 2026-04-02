@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:multi_store_app/gallery/men_gallery.dart';
 import 'package:multi_store_app/widgets/fake_search.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -37,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         body: TabBarView(
           children: [
-            Center(child: Text('men screen')),
+            MenGalleryScreen(),
             Center(child: Text('women screen')),
             Center(child: Text('shoes screen')),
             Center(child: Text('Bags screen')),

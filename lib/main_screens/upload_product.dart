@@ -26,6 +26,8 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
   late String productDescription;
   late String productId;
 
+  bool processing = false;
+
   String? mainCategoryValue;
   String? subCategoryValue;
 
@@ -96,9 +98,49 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
     );
   }
 
-  bool isLoading = false;
-
   Future<void> uploadImages() async {
+    final supabase = Supabase.instance.client;
+
+    imagesUrlList.clear();
+
+    final uploadFutures = imagesFilesList.map((image) async {
+      final file = File(image.path);
+
+      final fileName = "${DateTime.now().millisecondsSinceEpoch}_${image.name}";
+
+      final path = 'products/$fileName';
+
+      await supabase.storage.from('products').upload(path, file);
+
+      return supabase.storage.from('products').getPublicUrl(path);
+    }).toList();
+
+    imagesUrlList = await Future.wait(uploadFutures);
+  }
+
+  Future<void> uploadData() async {
+    final firestore = FirebaseFirestore.instance;
+
+    productId = const Uuid().v4();
+
+    await firestore.collection('products').doc(productId).set({
+      "productId": productId,
+      'quantity': quantity,
+      'category': mainCategoryValue,
+      'subcategory': subCategoryValue,
+      'price': price,
+      'productName': productName,
+      'productDescription': productDescription,
+      'images': imagesUrlList,
+      'discount': 0,
+      'cid': FirebaseAuth.instance.currentUser!.uid,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  void uploadProduct() async {
+    if (processing) return;
+
     if (!_formKey.currentState!.validate()) {
       MyMessageHandler.showSnackBar(_scaffoldKey, "Fill all fields");
       return;
@@ -111,73 +153,28 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
 
     _formKey.currentState!.save();
 
-    setState(() => isLoading = true);
-
-    final supabase = Supabase.instance.client;
+    setState(() => processing = true);
 
     try {
-      imagesUrlList.clear();
+      await uploadImages();
+      await uploadData();
 
-      final uploadFutures = imagesFilesList.map((image) async {
-        final file = File(image.path);
+      MyMessageHandler.showSnackBar(_scaffoldKey, "Uploaded!");
 
-        final fileName =
-            "${DateTime.now().millisecondsSinceEpoch}_${image.name}";
-
-        final path = 'products/$fileName';
-
-        await supabase.storage.from('products').upload(path, file);
-
-        return supabase.storage.from('products').getPublicUrl(path);
-      }).toList();
-
-      imagesUrlList = await Future.wait(uploadFutures);
+      setState(() {
+        imagesFilesList.clear();
+        imagesUrlList.clear();
+        mainCategoryValue = null;
+        subCategoryValue = null;
+      });
 
       _formKey.currentState!.reset();
     } catch (e) {
-      print("Upload error: $e");
+      print(e);
       MyMessageHandler.showSnackBar(_scaffoldKey, "Upload failed");
     } finally {
-      setState(() => isLoading = false);
+      setState(() => processing = false);
     }
-  }
-
-  void uploadData() async {
-    if (imagesUrlList.isNotEmpty) {
-      final firestore = FirebaseFirestore.instance;
-
-      productId = const Uuid().v4();
-
-      final docRef = firestore.collection('products').doc(productId);
-
-      await docRef
-          .set({
-            "productId": productId,
-            'quantity': quantity,
-            'category': mainCategoryValue,
-            'subcategory': subCategoryValue,
-            'price': price,
-            'productName': productName,
-            'productDescription': productDescription,
-            'images': imagesUrlList,
-            'discount': 0,
-            'cid': FirebaseAuth.instance.currentUser!.uid,
-          })
-          .whenComplete(() {
-            setState(() {
-              imagesFilesList.clear();
-              imagesUrlList.clear();
-              mainCategoryValue = null;
-              subCategoryValue = null;
-            });
-          });
-    } else {
-      print("No images uploaded");
-    }
-  }
-
-  void uploadProduct() async {
-    await uploadImages().whenComplete(() => uploadData());
   }
 
   @override
@@ -223,44 +220,44 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                   child: Column(
                     children: [
                       DropdownButtonFormField<String>(
-                        initialValue: mainCategoryValue,
+                        value: mainCategoryValue,
                         decoration: textFormDecor.copyWith(
                           labelText: "Main Category",
                         ),
                         items: maincateg.map((e) {
                           return DropdownMenuItem(value: e, child: Text(e));
                         }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            mainCategoryValue = value;
-                            subCategoryValue = null;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) return "Select category";
-                          return null;
-                        },
+                        onChanged: processing
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  mainCategoryValue = value;
+                                  subCategoryValue = null;
+                                });
+                              },
+                        validator: (value) =>
+                            value == null ? "Select category" : null,
                       ),
 
                       const SizedBox(height: 10),
 
                       DropdownButtonFormField<String>(
-                        initialValue: subCategoryValue,
+                        value: subCategoryValue,
                         decoration: textFormDecor.copyWith(
                           labelText: "Sub Category",
                         ),
                         items: currentSubCategories.map((e) {
                           return DropdownMenuItem(value: e, child: Text(e));
                         }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            subCategoryValue = value;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) return "Select subcategory";
-                          return null;
-                        },
+                        onChanged: processing
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  subCategoryValue = value;
+                                });
+                              },
+                        validator: (value) =>
+                            value == null ? "Select subcategory" : null,
                       ),
                     ],
                   ),
@@ -284,6 +281,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
+                        enabled: !processing,
                         validator: (value) {
                           if (value!.isEmpty) return "Price required";
                           if (!value.isValidPrice()) return "Invalid price";
@@ -301,6 +299,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                           labelText: "Quantity",
                         ),
                         keyboardType: TextInputType.number,
+                        enabled: !processing,
                         validator: (value) {
                           if (value!.isEmpty) return "Quantity required";
                           if (!value.isValidQuantity()) {
@@ -319,6 +318,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                         decoration: textFormDecor.copyWith(
                           labelText: "Product Name",
                         ),
+                        enabled: !processing,
                         validator: (value) =>
                             value!.isEmpty ? "Enter name" : null,
                         onSaved: (value) {
@@ -333,6 +333,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                         decoration: textFormDecor.copyWith(
                           labelText: "Description",
                         ),
+                        enabled: !processing,
                         validator: (value) =>
                             value!.isEmpty ? "Enter description" : null,
                         onSaved: (value) {
@@ -353,13 +354,15 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             FloatingActionButton.extended(
-              onPressed: imagesFilesList.isEmpty
-                  ? pickProductImages
-                  : () {
-                      setState(() {
-                        imagesFilesList.clear();
-                      });
-                    },
+              onPressed: processing
+                  ? null
+                  : (imagesFilesList.isEmpty
+                        ? pickProductImages
+                        : () {
+                            setState(() {
+                              imagesFilesList.clear();
+                            });
+                          }),
               backgroundColor: Colors.yellow,
               icon: Icon(
                 imagesFilesList.isEmpty ? Icons.photo : Icons.delete,
@@ -374,12 +377,21 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
             const SizedBox(width: 10),
 
             FloatingActionButton.extended(
-              onPressed: uploadProduct,
+              onPressed: processing ? null : uploadProduct,
               backgroundColor: Colors.yellow,
-              icon: const Icon(Icons.upload, color: Colors.black),
-              label: const Text(
-                "Upload",
-                style: TextStyle(color: Colors.black),
+              icon: processing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.black,
+                      ),
+                    )
+                  : const Icon(Icons.upload, color: Colors.black),
+              label: Text(
+                processing ? "Uploading..." : "Upload",
+                style: const TextStyle(color: Colors.black),
               ),
             ),
           ],
