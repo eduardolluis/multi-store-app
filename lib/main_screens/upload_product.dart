@@ -1,9 +1,9 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:multi_store_app/utilities/categ_list.dart';
 import 'package:multi_store_app/widgets/snackbar_widget.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UploadProductScreen extends StatefulWidget {
   const UploadProductScreen({super.key});
@@ -22,12 +22,13 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
   late String productName;
   late String productDescription;
 
-  String mainCategoryValue = 'select category';
-  String subCategoryValue = 'subCategory';
+  String? mainCategoryValue;
+  String? subCategoryValue;
 
   final ImagePicker _picker = ImagePicker();
-  List<XFile>? imagesFilesList = [];
-  dynamic _pickedImageError;
+
+  List<XFile> imagesFilesList = [];
+  List<String> imagesUrlList = [];
 
   List<String> get currentSubCategories {
     switch (mainCategoryValue) {
@@ -50,83 +51,83 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
       case 'bags':
         return bags;
       default:
-        return ['subCategory'];
+        return [];
     }
   }
 
   void pickProductImages() async {
-    try {
-      final pickedImages = await _picker.pickMultiImage(
-        maxHeight: 300,
-        maxWidth: 300,
-        imageQuality: 95,
-      );
+    final pickedImages = await _picker.pickMultiImage(
+      maxHeight: 300,
+      maxWidth: 300,
+      imageQuality: 95,
+    );
 
-      if (pickedImages != null) {
-        setState(() {
-          imagesFilesList = pickedImages;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _pickedImageError = e;
-      });
-    }
+    setState(() {
+      imagesFilesList = pickedImages;
+    });
   }
 
   Widget previewImages() {
-    if (imagesFilesList != null && imagesFilesList!.isNotEmpty) {
-      return SizedBox(
-        height: double.infinity,
-        child: ListView.builder(
-          itemCount: imagesFilesList!.length,
-          itemBuilder: (context, index) {
-            return Image.file(File(imagesFilesList![index].path));
-          },
-        ),
-      );
-    } else {
-      return const Center(
-        child: Text(
-          "You have not \n \n picked any products yet!",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16),
-        ),
-      );
+    if (imagesFilesList.isEmpty) {
+      return const Center(child: Text("No images selected"));
     }
+
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: imagesFilesList.length,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.all(5),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.file(
+              File(imagesFilesList[index].path),
+              width: 120,
+              height: 120,
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      },
+    );
   }
 
-  void uploadProduct() {
+  void uploadProduct() async {
     if (_formKey.currentState!.validate()) {
+      if (imagesFilesList.isEmpty) {
+        MyMessageHandler.showSnackBar(_scaffoldKey, "Pick images first");
+        return;
+      }
+
       _formKey.currentState!.save();
 
-      if (imagesFilesList == null || imagesFilesList!.isEmpty) {
-        MyMessageHandler.showSnackBar(_scaffoldKey, "Please pick image first");
-        return;
-      }
+      try {
+        final supabase = Supabase.instance.client;
 
-      if (mainCategoryValue == 'select category') {
-        MyMessageHandler.showSnackBar(_scaffoldKey, "Please select a category");
-        return;
-      }
+        for (var image in imagesFilesList) {
+          final file = File(image.path);
+          final fileName = DateTime.now().millisecondsSinceEpoch.toString();
 
-      if (subCategoryValue == 'subCategory') {
-        MyMessageHandler.showSnackBar(
-          _scaffoldKey,
-          "Please select a subcategory",
-        );
-        return;
-      }
+          final path = 'products/$fileName';
 
+          await supabase.storage.from('products').upload(path, file);
+
+          final imageUrl = supabase.storage.from('products').getPublicUrl(path);
+
+          imagesUrlList.add(imageUrl);
+        }
+      } catch (e) {
+        print(e);
+      }
       setState(() {
-        imagesFilesList = [];
-        mainCategoryValue = 'select category';
-        subCategoryValue = 'subCategory';
+        imagesFilesList.clear();
+        mainCategoryValue = null;
+        subCategoryValue = null;
       });
 
       _formKey.currentState!.reset();
     } else {
-      MyMessageHandler.showSnackBar(_scaffoldKey, "please fill all fields");
+      MyMessageHandler.showSnackBar(_scaffoldKey, "Fill all fields");
     }
   }
 
@@ -140,196 +141,183 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
           title: const Text("Upload Product"),
           backgroundColor: Colors.yellow,
           foregroundColor: Colors.black,
-          elevation: 0,
         ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(12),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  /// 🔥 IMAGE PREVIEW CARD
-                  Container(
-                    height: 180,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.blueGrey[200],
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: previewImages(),
-                    ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Container(
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: Colors.blueGrey[200],
+                    borderRadius: BorderRadius.circular(15),
                   ),
-
-                  const SizedBox(height: 15),
-
-                  /// 🔥 CATEGORY CARD
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(blurRadius: 5, color: Colors.black12),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            "Category",
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        DropdownButtonFormField<String>(
-                          value: mainCategoryValue,
-                          decoration: textFormDecor.copyWith(
-                            labelText: "Main Category",
-                          ),
-                          items: maincateg.map((e) {
-                            return DropdownMenuItem(value: e, child: Text(e));
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              mainCategoryValue = value!;
-                              subCategoryValue = currentSubCategories.first;
-                            });
-                          },
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        DropdownButtonFormField<String>(
-                          value: subCategoryValue,
-                          decoration: textFormDecor.copyWith(
-                            labelText: "Sub Category",
-                          ),
-                          items: currentSubCategories.map((e) {
-                            return DropdownMenuItem(value: e, child: Text(e));
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              subCategoryValue = value!;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: previewImages(),
                   ),
+                ),
 
-                  const SizedBox(height: 15),
+                const SizedBox(height: 15),
 
-                  /// 🔥 FORM CARD
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black12, blurRadius: 5),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          decoration: textFormDecor.copyWith(
-                            labelText: "Price",
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          validator: (value) {
-                            if (value!.isEmpty) return "Price required";
-                            if (!value.isValidPrice()) return "Invalid price";
-                            return null;
-                          },
-                          onSaved: (value) {
-                            price = double.parse(value!);
-                          },
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        TextFormField(
-                          decoration: textFormDecor.copyWith(
-                            labelText: "Quantity",
-                          ),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value!.isEmpty) return "Quantity required";
-                            if (!value.isValidQuantity()) {
-                              return "Invalid quantity";
-                            }
-                            return null;
-                          },
-                          onSaved: (value) {
-                            quantity = int.parse(value!);
-                          },
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        TextFormField(
-                          maxLines: 2,
-                          decoration: textFormDecor.copyWith(
-                            labelText: "Product Name",
-                          ),
-                          validator: (value) =>
-                              value!.isEmpty ? "Enter name" : null,
-                          onSaved: (value) {
-                            productName = value!;
-                          },
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        TextFormField(
-                          maxLines: 3,
-                          decoration: textFormDecor.copyWith(
-                            labelText: "Description",
-                          ),
-                          validator: (value) =>
-                              value!.isEmpty ? "Enter description" : null,
-                          onSaved: (value) {
-                            productDescription = value!;
-                          },
-                        ),
-                      ],
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black12, blurRadius: 5),
+                    ],
                   ),
+                  child: Column(
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: mainCategoryValue,
+                        decoration: textFormDecor.copyWith(
+                          labelText: "Main Category",
+                        ),
+                        items: maincateg.map((e) {
+                          return DropdownMenuItem(value: e, child: Text(e));
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            mainCategoryValue = value;
+                            subCategoryValue = null;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) return "Select category";
+                          return null;
+                        },
+                      ),
 
-                  const SizedBox(height: 80),
-                ],
-              ),
+                      const SizedBox(height: 10),
+
+                      DropdownButtonFormField<String>(
+                        initialValue: subCategoryValue,
+                        decoration: textFormDecor.copyWith(
+                          labelText: "Sub Category",
+                        ),
+                        items: currentSubCategories.map((e) {
+                          return DropdownMenuItem(value: e, child: Text(e));
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            subCategoryValue = value;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) return "Select subcategory";
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black12, blurRadius: 5),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        decoration: textFormDecor.copyWith(labelText: "Price"),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        validator: (value) {
+                          if (value!.isEmpty) return "Price required";
+                          if (!value.isValidPrice()) return "Invalid price";
+                          return null;
+                        },
+                        onSaved: (value) {
+                          price = double.parse(value!);
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      TextFormField(
+                        decoration: textFormDecor.copyWith(
+                          labelText: "Quantity",
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value!.isEmpty) return "Quantity required";
+                          if (!value.isValidQuantity()) {
+                            return "Invalid quantity";
+                          }
+                          return null;
+                        },
+                        onSaved: (value) {
+                          quantity = int.parse(value!);
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      TextFormField(
+                        decoration: textFormDecor.copyWith(
+                          labelText: "Product Name",
+                        ),
+                        validator: (value) =>
+                            value!.isEmpty ? "Enter name" : null,
+                        onSaved: (value) {
+                          productName = value!;
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      TextFormField(
+                        maxLines: 3,
+                        decoration: textFormDecor.copyWith(
+                          labelText: "Description",
+                        ),
+                        validator: (value) =>
+                            value!.isEmpty ? "Enter description" : null,
+                        onSaved: (value) {
+                          productDescription = value!;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 80),
+              ],
             ),
           ),
         ),
 
-        /// 🔥 BOTONES MÁS LIMPIOS
         floatingActionButton: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             FloatingActionButton.extended(
-              onPressed: imagesFilesList!.isEmpty
+              onPressed: imagesFilesList.isEmpty
                   ? pickProductImages
                   : () {
                       setState(() {
-                        imagesFilesList = [];
+                        imagesFilesList.clear();
                       });
                     },
               backgroundColor: Colors.yellow,
               icon: Icon(
-                imagesFilesList!.isEmpty ? Icons.photo_library : Icons.delete,
+                imagesFilesList.isEmpty ? Icons.photo : Icons.delete,
                 color: Colors.black,
               ),
               label: Text(
-                imagesFilesList!.isEmpty ? "Gallery" : "Clear",
+                imagesFilesList.isEmpty ? "Gallery" : "Clear",
                 style: const TextStyle(color: Colors.black),
               ),
             ),
