@@ -28,12 +28,12 @@ class ShoesCategory extends StatelessWidget {
                       crossAxisSpacing: 5,
                       crossAxisCount: 3,
                       childAspectRatio: 0.8,
-                      children: List.generate(shoes.length, (index) {
+                      children: List.generate(shoes.length - 1, (index) {
                         return SubCategoryModel(
                           mainCategoryName: 'shoes',
-                          subCategoryName: shoes[index],
+                          subCategoryName: shoes[index - 1],
                           assetName: 'images/shoes/shoes$index',
-                          subCategorLabel: shoes[index],
+                          subCategorLabel: shoes[index - 1],
                         );
                       }),
                     ),

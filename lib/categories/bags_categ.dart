@@ -28,12 +28,12 @@ class BagsCategory extends StatelessWidget {
                       crossAxisSpacing: 5,
                       crossAxisCount: 3,
                       childAspectRatio: 0.8,
-                      children: List.generate(bags.length, (index) {
+                      children: List.generate(bags.length - 1, (index) {
                         return SubCategoryModel(
                           mainCategoryName: 'bags',
-                          subCategoryName: bags[index],
+                          subCategoryName: bags[index + 1],
                           assetName: 'images/bags/bags$index',
-                          subCategorLabel: bags[index],
+                          subCategorLabel: bags[index + 1],
                         );
                       }),
                     ),

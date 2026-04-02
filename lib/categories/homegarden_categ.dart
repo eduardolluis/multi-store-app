@@ -28,12 +28,14 @@ class HomegardenCategory extends StatelessWidget {
                       crossAxisSpacing: 5,
                       crossAxisCount: 3,
                       childAspectRatio: 0.8,
-                      children: List.generate(homeandgarden.length, (index) {
+                      children: List.generate(homeandgarden.length - 1, (
+                        index,
+                      ) {
                         return SubCategoryModel(
                           mainCategoryName: 'home & garden',
-                          subCategoryName: homeandgarden[index],
+                          subCategoryName: homeandgarden[index + 1],
                           assetName: 'images/homegarden/home$index',
-                          subCategorLabel: homeandgarden[index],
+                          subCategorLabel: homeandgarden[index + 1],
                         );
                       }),
                     ),
