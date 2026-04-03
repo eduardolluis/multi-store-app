@@ -8,7 +8,6 @@ import 'package:multi_store_app/gallery/kids_gallery.dart';
 import 'package:multi_store_app/gallery/men_gallery.dart';
 import 'package:multi_store_app/gallery/shoes_gallery.dart';
 import 'package:multi_store_app/gallery/women_gallery.dart';
-import 'package:multi_store_app/utilities/categ_list.dart';
 import 'package:multi_store_app/widgets/fake_search.dart';
 
 class HomeScreen extends StatefulWidget {

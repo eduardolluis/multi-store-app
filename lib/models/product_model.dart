@@ -11,7 +11,9 @@ class ProductModel extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => ProductDetailScreen()),
+          MaterialPageRoute(
+            builder: (context) => ProductDetailScreen(productList: products),
+          ),
         );
       },
       child: Padding(
