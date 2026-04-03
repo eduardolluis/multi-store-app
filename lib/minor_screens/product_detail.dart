@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swiper_null_safety/flutter_swiper_null_safety.dart';
+import 'package:multi_store_app/main_screens/visit_store.dart';
 import 'package:multi_store_app/minor_screens/fullscreen_view.dart';
 import 'package:multi_store_app/models/product_model.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
@@ -217,7 +218,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     IconButton(onPressed: () {}, icon: const Icon(Icons.store)),
                     const SizedBox(height: 20),
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => VisitStore(
+                              supplierId: widget.productList['cid'],
+                            ),
+                          ),
+                        );
+                      },
                       icon: const Icon(Icons.shopping_cart),
                     ),
                   ],

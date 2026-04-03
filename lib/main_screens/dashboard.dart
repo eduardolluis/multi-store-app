@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:multi_store_app/dashboard_components/balance.dart';
 import 'package:multi_store_app/dashboard_components/edit_business.dart';
 import 'package:multi_store_app/dashboard_components/manage_products.dart';
-import 'package:multi_store_app/dashboard_components/my_store.dart';
 import 'package:multi_store_app/dashboard_components/statics.dart';
 import 'package:multi_store_app/dashboard_components/supplier_orders.dart';
+import 'package:multi_store_app/main_screens/visit_store.dart';
 import 'package:multi_store_app/widgets/alert_dialog.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 
@@ -28,7 +28,7 @@ List<IconData> icons = [
 ];
 
 List<Widget> pages = [
-  MyStore(),
+  VisitStore(supplierId: FirebaseAuth.instance.currentUser!.uid),
   SupplierOrders(),
   EditBusiness(),
   ManageProducts(),
