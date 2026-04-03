@@ -101,6 +101,9 @@ flutter:
     - family: Acme
       fonts:
         - asset: fonts/Acme-Regular.ttf
+    - family: AkayaKanadaka
+      fonts:
+        - asset: fonts/AkayaKanadaka-Regular.ttf
 
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
