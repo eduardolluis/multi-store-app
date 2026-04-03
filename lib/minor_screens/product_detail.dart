@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swiper_null_safety/flutter_swiper_null_safety.dart';
+import 'package:multi_store_app/minor_screens/fullscreen_view.dart';
 import 'package:multi_store_app/models/product_model.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_grid_view.dart';
@@ -31,45 +32,58 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           body: SingleChildScrollView(
             child: Column(
               children: [
-                Stack(
-                  children: [
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.45,
-                      child: Swiper(
-                        pagination: const SwiperPagination(
-                          builder: SwiperPagination.fraction,
-                        ),
-                        itemCount: imagesList.length,
-                        itemBuilder: (context, index) {
-                          return Image(image: NetworkImage(imagesList[index]));
-                        },
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            FullScreenView(imagesList: imagesList),
                       ),
-                    ),
-                    Positioned(
-                      left: 15,
-                      top: 20,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.yellow,
-                        child: IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
+                    );
+                  },
+                  child: Stack(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.45,
+                        child: Swiper(
+                          pagination: const SwiperPagination(
+                            builder: SwiperPagination.fraction,
+                          ),
+                          itemCount: imagesList.length,
+                          itemBuilder: (context, index) {
+                            return Image(
+                              image: NetworkImage(imagesList[index]),
+                            );
                           },
-                          icon: Icon(Icons.arrow_back_ios_new),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      right: 15,
-                      top: 20,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.yellow,
-                        child: IconButton(
-                          onPressed: () {},
-                          icon: Icon(Icons.share),
+                      Positioned(
+                        left: 15,
+                        top: 20,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.yellow,
+                          child: IconButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            icon: Icon(Icons.arrow_back_ios_new),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        right: 15,
+                        top: 20,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.yellow,
+                          child: IconButton(
+                            onPressed: () {},
+                            icon: Icon(Icons.share),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(8, 8, 8, 50),
