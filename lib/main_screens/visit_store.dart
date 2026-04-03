@@ -13,6 +13,7 @@ class VisitStore extends StatefulWidget {
 }
 
 class _VisitStoreState extends State<VisitStore> {
+  bool following = false;
   @override
   Widget build(BuildContext context) {
     final Stream<QuerySnapshot> productsStream = FirebaseFirestore.instance
@@ -107,14 +108,15 @@ class _VisitStoreState extends State<VisitStore> {
                                 ),
                                 borderRadius: BorderRadius.circular(25),
                               ),
-                              child: Center(
-                                child: Text(
-                                  "FOLLOW",
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 16,
-                                  ),
-                                ),
+                              child: MaterialButton(
+                                onPressed: () {
+                                  setState(() {
+                                    following = !following;
+                                  });
+                                },
+                                child: following == true
+                                    ? Text("FOLLOWING")
+                                    : Text("FOLLOW"),
                               ),
                             ),
                           ],
