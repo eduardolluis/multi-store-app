@@ -220,7 +220,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                   child: Column(
                     children: [
                       DropdownButtonFormField<String>(
-                        value: mainCategoryValue,
+                        initialValue: mainCategoryValue,
                         decoration: textFormDecor.copyWith(
                           labelText: "Main Category",
                         ),
@@ -242,7 +242,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                       const SizedBox(height: 10),
 
                       DropdownButtonFormField<String>(
-                        value: subCategoryValue,
+                        initialValue: subCategoryValue,
                         decoration: textFormDecor.copyWith(
                           labelText: "Sub Category",
                         ),
