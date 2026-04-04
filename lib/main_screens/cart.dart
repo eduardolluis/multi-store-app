@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
+import 'package:provider/provider.dart';
 
 class CartScreen extends StatefulWidget {
   final Widget? back;
@@ -29,33 +31,15 @@ class _CartScreenState extends State<CartScreen> {
               ),
             ],
           ),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text("Youy Cart Is Empty", style: TextStyle(fontSize: 30)),
-                SizedBox(height: 15),
-                Material(
-                  color: Colors.lightBlueAccent,
-                  borderRadius: BorderRadius.circular(25),
-                  child: MaterialButton(
-                    minWidth: MediaQuery.of(context).size.width * 0.6,
-                    onPressed: () {
-                      Navigator.canPop(context)
-                          ? Navigator.pop(context)
-                          : Navigator.pushReplacementNamed(
-                              context,
-                              '/customer_home',
-                            );
-                    },
-                    child: const Text(
-                      'Continue Shopping',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          body: Consumer<Cart>(
+            builder: (BuildContext context, cart, child) {
+              return ListView.builder(
+                itemCount: cart.count,
+                itemBuilder: (context, index) {
+                  return ListTile(title: Text(cart.getItems[index].name));
+                },
+              );
+            },
           ),
           bottomSheet: Padding(
             padding: const EdgeInsets.all(8.0),

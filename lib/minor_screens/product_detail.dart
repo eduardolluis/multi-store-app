@@ -5,8 +5,10 @@ import 'package:multi_store_app/main_screens/cart.dart';
 import 'package:multi_store_app/main_screens/visit_store.dart';
 import 'package:multi_store_app/minor_screens/fullscreen_view.dart';
 import 'package:multi_store_app/models/product_model.dart';
+import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
+import 'package:provider/provider.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_grid_view.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_tile.dart';
 
@@ -248,7 +250,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                 YellowButton(
                   label: 'ADD TO CART',
-                  onPressed: () {},
+                  onPressed: () {
+                    context.read<Cart>().addItem(
+                      widget.productList['productName'],
+                      widget.productList['price'],
+                      1,
+                      widget.productList['quantity'],
+                      widget.productList['images'],
+                      widget.productList['productId'],
+                      widget.productList['cid'],
+                    );
+                  },
                   width: .55,
                 ),
               ],
