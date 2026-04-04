@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swiper_null_safety/flutter_swiper_null_safety.dart';
+import 'package:multi_store_app/main_screens/cart.dart';
 import 'package:multi_store_app/main_screens/visit_store.dart';
 import 'package:multi_store_app/minor_screens/fullscreen_view.dart';
 import 'package:multi_store_app/models/product_model.dart';
+import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_grid_view.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_tile.dart';
@@ -215,8 +217,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               children: [
                 Row(
                   children: [
-                    IconButton(onPressed: () {}, icon: const Icon(Icons.store)),
-                    const SizedBox(height: 20),
                     IconButton(
                       onPressed: () {
                         Navigator.push(
@@ -225,6 +225,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             builder: (context) => VisitStore(
                               supplierId: widget.productList['cid'],
                             ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.store),
+                    ),
+                    const SizedBox(height: 20),
+                    IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CartScreen(back: AppbarBackButton()),
                           ),
                         );
                       },
