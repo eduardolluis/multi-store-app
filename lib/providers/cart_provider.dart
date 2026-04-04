@@ -32,6 +32,15 @@ class Cart extends ChangeNotifier {
     return _list;
   }
 
+  double get totalPrice {
+    var total = 0.0;
+
+    for (var item in _list) {
+      total += item.price * item.qty;
+    }
+    return total;
+  }
+
   int? get count {
     return _list.length;
   }
