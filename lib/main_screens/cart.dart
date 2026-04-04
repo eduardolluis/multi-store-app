@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
@@ -18,6 +19,7 @@ class _CartScreenState extends State<CartScreen> {
     return Material(
       child: SafeArea(
         child: Scaffold(
+          backgroundColor: Colors.grey[200],
           appBar: AppBar(
             elevation: 0,
             centerTitle: true,
@@ -36,7 +38,96 @@ class _CartScreenState extends State<CartScreen> {
               return ListView.builder(
                 itemCount: cart.count,
                 itemBuilder: (context, index) {
-                  return ListTile(title: Text(cart.getItems[index].name));
+                  return Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: Card(
+                      color: Colors.white,
+                      child: SizedBox(
+                        height: 100,
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              height: 100,
+                              width: 120,
+                              child: Image.network(
+                                cart.getItems[index].imagesUrl[0],
+                              ),
+                            ),
+                            Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      cart.getItems[index].name,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          cart.getItems[index].price
+                                              .toStringAsFixed(2),
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.red[700],
+                                          ),
+                                        ),
+                                        Container(
+                                          height: 35,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[200],
+                                            borderRadius: BorderRadius.circular(
+                                              15,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              IconButton(
+                                                onPressed: () {},
+                                                icon: Icon(
+                                                  FontAwesomeIcons.minus,
+                                                  size: 18,
+                                                ),
+                                              ),
+                                              Text(
+                                                "1",
+                                                style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontFamily: 'Acme',
+                                                ),
+                                              ),
+                                              IconButton(
+                                                onPressed: () {},
+                                                icon: Icon(
+                                                  FontAwesomeIcons.plus,
+                                                  size: 18,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
                 },
               );
             },
