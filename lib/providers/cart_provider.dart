@@ -17,6 +17,13 @@ class Product {
     required this.documentId,
     required this.supplierId,
   });
+  void increase() {
+    qty++;
+  }
+
+  void decrease() {
+    qty--;
+  }
 }
 
 class Cart extends ChangeNotifier {
@@ -48,6 +55,16 @@ class Cart extends ChangeNotifier {
       supplierId: supplierId,
     );
     _list.add(product);
+    notifyListeners();
+  }
+
+  void increment(Product product) {
+    product.increase();
+    notifyListeners();
+  }
+
+  void reduceByOne(Product product) {
+    product.decrease();
     notifyListeners();
   }
 }
