@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
+import 'package:multi_store_app/widgets/alert_dialog.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/snackbar_widget.dart';
 import 'package:provider/provider.dart';
@@ -27,28 +28,29 @@ class _WishListScreenState extends State<WishListScreen> {
             backgroundColor: Colors.white,
             title: AppbarTitle(title: 'WishList'),
             actions: [
-              //   context.watch<Cart>().getItems.isEmpty
-              //       ? const SizedBox()
-              //       : IconButton(
-              //           onPressed: () {
-              //             MyAlertDialog.showMyDialog(
-              //               context: context,
-              //               title: 'Clear cart',
-              //               content: 'Are you sure you want to clear the cart?',
-              //               tabNo: () {
-              //                 Navigator.pop(context);
-              //               },
-              //               tabYes: () {
-              //                 context.read<Cart>().clearCart();
-              //                 Navigator.pop(context);
-              //               },
-              //             );
-              //           },
-              //           icon: const Icon(
-              //             Icons.delete_forever,
-              //             color: Colors.black,
-              //           ),
-              //         ),
+              context.watch<Cart>().getItems.isEmpty
+                  ? const SizedBox()
+                  : IconButton(
+                      onPressed: () {
+                        MyAlertDialog.showMyDialog(
+                          context: context,
+                          title: 'Clear Wishlist',
+                          content:
+                              'Are you sure you want to clear your wishlist?',
+                          tabNo: () {
+                            Navigator.pop(context);
+                          },
+                          tabYes: () {
+                            context.read<Wish>().clearWishList();
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.delete_forever,
+                        color: Colors.black,
+                      ),
+                    ),
             ],
           ),
           body: context.watch<Wish>().getWishItems.isNotEmpty
