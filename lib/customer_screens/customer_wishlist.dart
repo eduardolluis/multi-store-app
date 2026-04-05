@@ -89,7 +89,7 @@ class WishItems extends StatelessWidget {
               child: Card(
                 color: Colors.white,
                 child: SizedBox(
-                  height: 100,
+                  height: 106,
                   child: Row(
                     children: [
                       SizedBox(

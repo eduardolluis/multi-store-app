@@ -42,4 +42,9 @@ class Wish extends ChangeNotifier {
     _list.clear();
     notifyListeners();
   }
+
+  void removeThis(String id) {
+    _list.removeWhere((element) => element.documentId == id);
+    notifyListeners();
+  }
 }
