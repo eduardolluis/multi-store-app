@@ -14,6 +14,7 @@ import 'package:multi_store_app/widgets/yellow_button_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_grid_view.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_tile.dart';
+import 'package:badges/badges.dart' as badge;
 
 class ProductDetailScreen extends StatefulWidget {
   final dynamic productList;
@@ -30,22 +31,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       .where('subCategory', isEqualTo: widget.productList['subCategory'])
       .snapshots();
 
-  late var existingItemWishlist = context
-      .read<Wish>()
-      .getWishItems
-      .firstWhereOrNull(
-        (product) => product.documentId == widget.productList['productId'],
-      );
-
-  late var existingItemCart = context.read<Cart>().getItems.firstWhereOrNull(
-    (product) => product.documentId == widget.productList['productId'],
-  );
   final GlobalKey<ScaffoldMessengerState> scaffoldKey =
       GlobalKey<ScaffoldMessengerState>();
   late List<dynamic> imagesList = widget.productList['images'];
 
   @override
   Widget build(BuildContext context) {
+    var existingItemCart = context.read<Cart>().getItems.firstWhereOrNull(
+      (product) => product.documentId == widget.productList['productId'],
+    );
     return Material(
       child: SafeArea(
         child: ScaffoldMessenger(
@@ -149,6 +143,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                             IconButton(
                               onPressed: () {
+                                var existingItemWishlist = context
+                                    .read<Wish>()
+                                    .getWishItems
+                                    .firstWhereOrNull(
+                                      (product) =>
+                                          product.documentId ==
+                                          widget.productList['productId'],
+                                    );
                                 existingItemWishlist != null
                                     ? context.read<Wish>().removeThis(
                                         widget.productList['productId'],
@@ -294,12 +296,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.shopping_cart),
+                        icon: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: badge.Badge(
+                            showBadge: context.read<Cart>().getItems.isEmpty
+                                ? false
+                                : true,
+                            badgeStyle: badge.BadgeStyle(
+                              badgeColor: Colors.yellow,
+                            ),
+
+                            badgeContent: Text(
+                              context.watch<Cart>().getItems.toString(),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            child: const Icon(Icons.shopping_cart),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   YellowButton(
-                    label: 'ADD TO CART',
+                    label: existingItemCart != null
+                        ? 'Added to cart'
+                        : 'ADD TO CART',
                     onPressed: () {
                       existingItemCart != null
                           ? MyMessageHandler.showSnackBar(
