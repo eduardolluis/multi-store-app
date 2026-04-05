@@ -4,7 +4,6 @@ import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
 import 'package:multi_store_app/widgets/alert_dialog.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
-import 'package:multi_store_app/widgets/snackbar_widget.dart';
 import 'package:provider/provider.dart';
 
 class WishListScreen extends StatefulWidget {
@@ -153,20 +152,6 @@ class WishItems extends StatelessWidget {
                                           ? const SizedBox()
                                           : IconButton(
                                               onPressed: () {
-                                                // context
-                                                //             .read<Cart>()
-                                                //             .getItems
-                                                //             .firstWhereOrNull(
-                                                //               (element) =>
-                                                //                   element
-                                                //                       .documentId ==
-                                                //                   product
-                                                //                       .documentId,
-                                                //             ) !=
-                                                //         null
-                                                //     // ignore: avoid_print
-                                                //     ? print('Already in cart')
-                                                //     : context
                                                 context.read<Cart>().addItem(
                                                   product.name,
                                                   product.price,

@@ -14,6 +14,12 @@ class ProductModel extends StatefulWidget {
 }
 
 class _ProductModelState extends State<ProductModel> {
+  late var existingItemWishlist = context
+      .read<Wish>()
+      .getWishItems
+      .firstWhereOrNull(
+        (product) => product.documentId == widget.products['productId'],
+      );
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -83,16 +89,7 @@ class _ProductModelState extends State<ProductModel> {
                               )
                             : IconButton(
                                 onPressed: () {
-                                  context
-                                              .read<Wish>()
-                                              .getWishItems
-                                              .firstWhereOrNull(
-                                                (product) =>
-                                                    product.documentId ==
-                                                    widget
-                                                        .products['productId'],
-                                              ) !=
-                                          null
+                                  existingItemWishlist != null
                                       ? context.read<Wish>().removeThis(
                                           widget.products['productId'],
                                         )
