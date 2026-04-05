@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swiper_null_safety/flutter_swiper_null_safety.dart';
 import 'package:multi_store_app/main_screens/cart.dart';
@@ -6,6 +7,7 @@ import 'package:multi_store_app/main_screens/visit_store.dart';
 import 'package:multi_store_app/minor_screens/fullscreen_view.dart';
 import 'package:multi_store_app/models/product_model.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
+import 'package:multi_store_app/providers/wish_providers.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/snackbar_widget.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
@@ -136,7 +138,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
 
                             IconButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                context
+                                            .read<Wish>()
+                                            .getWishItems
+                                            .firstWhereOrNull(
+                                              (product) =>
+                                                  product.documentId ==
+                                                  widget
+                                                      .productList['productId'],
+                                            ) !=
+                                        null
+                                    ? MyMessageHandler.showSnackBar(
+                                        scaffoldKey,
+                                        'This item already in cart',
+                                      )
+                                    : context.read<Cart>().addItem(
+                                        widget.productList['productName'],
+                                        widget.productList['price'],
+                                        1,
+                                        widget.productList['quantity'],
+                                        widget.productList['images'],
+                                        widget.productList['productId'],
+                                        widget.productList['cid'],
+                                      );
+                              },
                               icon: const Icon(
                                 Icons.favorite_border_outlined,
                                 color: Colors.red,
@@ -257,7 +283,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ],
                   ),
-
                   YellowButton(
                     label: 'ADD TO CART',
                     onPressed: () {
