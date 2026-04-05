@@ -1,6 +1,9 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
+import 'package:multi_store_app/widgets/snackbar_widget.dart';
 import 'package:provider/provider.dart';
 
 class WishListScreen extends StatefulWidget {
@@ -136,10 +139,46 @@ class WishItems extends StatelessWidget {
                                         icon: Icon(Icons.delete_forever),
                                       ),
                                       const SizedBox(width: 10),
-                                      IconButton(
-                                        onPressed: () {},
-                                        icon: Icon(Icons.add_shopping_cart),
-                                      ),
+                                      context
+                                                  .watch<Cart>()
+                                                  .getItems
+                                                  .firstWhereOrNull(
+                                                    (element) =>
+                                                        element.documentId ==
+                                                        product.documentId,
+                                                  ) !=
+                                              null
+                                          ? const SizedBox()
+                                          : IconButton(
+                                              onPressed: () {
+                                                // context
+                                                //             .read<Cart>()
+                                                //             .getItems
+                                                //             .firstWhereOrNull(
+                                                //               (element) =>
+                                                //                   element
+                                                //                       .documentId ==
+                                                //                   product
+                                                //                       .documentId,
+                                                //             ) !=
+                                                //         null
+                                                //     // ignore: avoid_print
+                                                //     ? print('Already in cart')
+                                                //     : context
+                                                context.read<Cart>().addItem(
+                                                  product.name,
+                                                  product.price,
+                                                  1,
+                                                  product.quantity,
+                                                  product.imagesUrl,
+                                                  product.documentId,
+                                                  product.supplierId,
+                                                );
+                                              },
+                                              icon: Icon(
+                                                Icons.add_shopping_cart,
+                                              ),
+                                            ),
                                     ],
                                   ),
                                 ],
