@@ -184,7 +184,6 @@ class CartItems extends StatelessWidget {
                                         product.qty == 1
                                             ? IconButton(
                                                 onPressed: () {
-                                                  cart.removeItem(product);
                                                   showCupertinoModalPopup(
                                                     context: context,
                                                     builder: (BuildContext context) => CupertinoActionSheet(
@@ -202,7 +201,52 @@ class CartItems extends StatelessWidget {
                                                               child: Text(
                                                                 'Move to wishlist',
                                                               ),
-                                                              onPressed: () {
+                                                              onPressed: () async {
+                                                                final alreadyInWish = context
+                                                                    .read<
+                                                                      Wish
+                                                                    >()
+                                                                    .getWishItems
+                                                                    .firstWhereOrNull(
+                                                                      (
+                                                                        element,
+                                                                      ) =>
+                                                                          element
+                                                                              .documentId ==
+                                                                          product
+                                                                              .documentId,
+                                                                    );
+
+                                                                if (alreadyInWish ==
+                                                                    null) {
+                                                                  await context
+                                                                      .read<
+                                                                        Wish
+                                                                      >()
+                                                                      .addWishItem(
+                                                                        product
+                                                                            .name,
+                                                                        product
+                                                                            .price,
+                                                                        1,
+                                                                        product
+                                                                            .quantity,
+                                                                        product
+                                                                            .imagesUrl,
+                                                                        product
+                                                                            .documentId,
+                                                                        product
+                                                                            .supplierId,
+                                                                      );
+                                                                }
+
+                                                                context
+                                                                    .read<
+                                                                      Cart
+                                                                    >()
+                                                                    .removeItem(
+                                                                      product,
+                                                                    );
                                                                 Navigator.pop(
                                                                   context,
                                                                 );
@@ -250,6 +294,9 @@ class CartItems extends StatelessWidget {
                                                                     .removeItem(
                                                                       product,
                                                                     );
+                                                                Navigator.pop(
+                                                                  context,
+                                                                );
                                                               },
                                                             ),
                                                           ],

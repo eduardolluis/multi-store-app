@@ -28,7 +28,7 @@ class _WishListScreenState extends State<WishListScreen> {
             backgroundColor: Colors.white,
             title: AppbarTitle(title: 'WishList'),
             actions: [
-              context.watch<Cart>().getItems.isEmpty
+              context.watch<Wish>().getWishItems.isEmpty
                   ? const SizedBox()
                   : IconButton(
                       onPressed: () {
