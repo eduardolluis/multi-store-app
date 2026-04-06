@@ -5,6 +5,9 @@ import 'package:multi_store_app/main_screens/category.dart';
 import 'package:multi_store_app/main_screens/home.dart';
 import 'package:multi_store_app/main_screens/profile.dart';
 import 'package:multi_store_app/main_screens/stores.dart';
+import 'package:badges/badges.dart' as badge;
+import 'package:multi_store_app/providers/cart_provider.dart';
+import 'package:provider/provider.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -32,12 +35,22 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
         selectedItemColor: Colors.black,
         currentIndex: _selectedIndex,
-        items: const [
+        items: [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Category'),
           BottomNavigationBarItem(icon: Icon(Icons.shop), label: 'Stores'),
+
           BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
+            icon: badge.Badge(
+              showBadge: context.read<Cart>().getItems.isEmpty ? false : true,
+              badgeStyle: badge.BadgeStyle(badgeColor: Colors.yellow),
+              badgeContent: Text(
+                context.watch<Cart>().getItems.length.toString(),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+
+              child: Icon(Icons.shopping_cart),
+            ),
             label: 'Cart',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),

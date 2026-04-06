@@ -1,14 +1,9 @@
-import 'package:collection/collection.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:multi_store_app/minor_screens/place_order.dart';
 import 'package:multi_store_app/models/cart_model.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
-import 'package:multi_store_app/providers/product_class.dart';
-import 'package:multi_store_app/providers/wish_providers.dart';
 import 'package:multi_store_app/widgets/alert_dialog.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
-import 'package:multi_store_app/widgets/yellow_button_widget.dart';
 import 'package:provider/provider.dart';
 
 class CartScreen extends StatefulWidget {
@@ -22,6 +17,8 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
+    double total = context.watch<Cart>().totalPrice;
+
     return Material(
       child: SafeArea(
         child: Scaffold(
@@ -70,7 +67,7 @@ class _CartScreenState extends State<CartScreen> {
                   children: [
                     Text("Total: \$ ", style: TextStyle(fontSize: 18)),
                     Text(
-                      context.watch<Cart>().totalPrice.toStringAsFixed(2),
+                      total.toStringAsFixed(2),
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -79,8 +76,27 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                   ],
                 ),
-
-                YellowButton(label: "CHECK OUT", width: 0.45, onPressed: () {}),
+                Container(
+                  height: 35,
+                  width: MediaQuery.of(context).size.width * 0.45,
+                  decoration: BoxDecoration(
+                    color: Colors.yellow,
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: MaterialButton(
+                    onPressed: total == 0
+                        ? null
+                        : () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PlaceOrderScreen(),
+                              ),
+                            );
+                          },
+                    child: const Text("CHECK OUT"),
+                  ),
+                ),
               ],
             ),
           ),
