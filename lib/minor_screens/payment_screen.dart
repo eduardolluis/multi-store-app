@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
@@ -14,6 +15,8 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
+  int selectedValue = 1;
+
   CollectionReference customers = FirebaseFirestore.instance.collection(
     'customers',
   );
@@ -136,6 +139,74 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Column(
+                            children: [
+                              RadioListTile(
+                                value: 1,
+                                groupValue: selectedValue,
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedValue = value!;
+                                  });
+                                },
+                                title: const Text("Cash on Delivery"),
+                                subtitle: const Text(
+                                  "Pay with cash upon delivery.",
+                                ),
+                              ),
+                              RadioListTile(
+                                value: 2,
+                                groupValue: selectedValue,
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedValue = value!;
+                                  });
+                                },
+                                title: const Text("Pay with your card"),
+                                subtitle: Row(
+                                  children: [
+                                    Icon(Icons.payment, color: Colors.blue),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 15,
+                                      ),
+                                      child: Icon(
+                                        FontAwesomeIcons.ccMastercard,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    Icon(
+                                      FontAwesomeIcons.ccVisa,
+                                      color: Colors.blue,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              RadioListTile(
+                                value: 3,
+                                groupValue: selectedValue,
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedValue = value!;
+                                  });
+                                },
+                                title: const Text("Pay with paypal"),
+                                subtitle: Row(
+                                  children: [
+                                    Icon(
+                                      FontAwesomeIcons.ccPaypal,
+                                      color: Colors.blue,
+                                    ),
+                                    SizedBox(width: 15),
+                                    Icon(
+                                      FontAwesomeIcons.paypal,
+                                      color: Colors.blue,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
