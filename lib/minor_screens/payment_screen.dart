@@ -6,6 +6,7 @@ import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -16,6 +17,7 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   int selectedValue = 1;
+  late String orderId;
 
   CollectionReference customers = FirebaseFirestore.instance.collection(
     'customers',
@@ -237,7 +239,38 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                     ),
                                     YellowButton(
                                       label: 'Confirm Payment',
-                                      onPressed: () {},
+                                      onPressed: () async {
+                                        for (var item
+                                            in context.read<Cart>().getItems) {
+                                          CollectionReference orderRef =
+                                              FirebaseFirestore.instance
+                                                  .collection('orders');
+                                          orderId = Uuid().v4();
+                                          await orderRef.doc(orderId).set({
+                                            'cid': data['cid'],
+                                            'custname': data['name'],
+                                            'email': data['email'],
+                                            'phone': data['phone'],
+                                            'address': data['address'],
+                                            'profileImage':
+                                                data['profileimage'],
+
+                                            'sid': item.supplierId,
+
+                                            'proid': item.documentId,
+                                            'orderId': orderId,
+                                            'orderImage': item.imagesUrl[0],
+                                            'orderqty': item.qty,
+                                            'orderprice': item.qty * item.price,
+
+                                            'deliverystatus': 'preparing',
+                                            "deliverydate": "",
+                                            "orderdate": DateTime.now(),
+                                            'paymentstatus': 'cash on delivery',
+                                            'orderreview': false,
+                                          });
+                                        }
+                                      },
                                       width: .9,
                                     ),
                                   ],
