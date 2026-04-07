@@ -20,6 +20,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double totalPrice = context.watch<Cart>().totalPrice;
     return FutureBuilder(
       future: customers.doc(FirebaseAuth.instance.currentUser!.uid).get(),
       builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
@@ -187,7 +188,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: YellowButton(
-                      label: 'Confirm',
+                      label: 'Confirm ${totalPrice.toStringAsFixed(2)} + USD',
                       onPressed: () {},
                       width: 1,
                     ),
