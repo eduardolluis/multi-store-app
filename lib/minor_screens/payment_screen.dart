@@ -219,7 +219,38 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     padding: const EdgeInsets.all(8.0),
                     child: YellowButton(
                       label: 'Confirm ${totalPaid.toStringAsFixed(2)} + USD',
-                      onPressed: () {},
+                      onPressed: () {
+                        if (selectedValue == 1) {
+                          showModalBottomSheet(
+                            context: context,
+                            builder: (context) => SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.3,
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 100),
+                                child: Column(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    Text(
+                                      "Pay At Home ${totalPaid.toStringAsFixed(2)} + \$",
+                                      style: TextStyle(fontSize: 24),
+                                    ),
+                                    YellowButton(
+                                      label: 'Confirm Payment',
+                                      onPressed: () {},
+                                      width: .9,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        } else if (selectedValue == 2) {
+                          // Handle card payment logic
+                        } else if (selectedValue == 3) {
+                          // Handle PayPal payment logic
+                        }
+                      },
                       width: 1,
                     ),
                   ),
