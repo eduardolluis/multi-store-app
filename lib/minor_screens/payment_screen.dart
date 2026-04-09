@@ -23,6 +23,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     'customers',
   );
 
+  void showProgress() {
+    ProgressDialog progress = ProgressDialog(context: context);
+    progress.show(max: 100, msg: "Processing Payment", progressBgColor: Colors.red);
+  }
+
   @override
   Widget build(BuildContext context) {
     double totalPrice = context.watch<Cart>().totalPrice;
@@ -240,6 +245,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                     YellowButton(
                                       label: 'Confirm Payment',
                                       onPressed: () async {
+                                        showProgress();
                                         for (var item
                                             in context.read<Cart>().getItems) {
                                           CollectionReference orderRef =
