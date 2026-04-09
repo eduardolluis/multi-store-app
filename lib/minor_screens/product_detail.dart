@@ -31,8 +31,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       .where('subCategory', isEqualTo: widget.productList['subCategory'])
       .snapshots();
 
-  final GlobalKey<ScaffoldMessengerState> scaffoldKey =
-      GlobalKey<ScaffoldMessengerState>();
+  final GlobalKey<ScaffoldMessengerState> scaffoldKey = GlobalKey<ScaffoldMessengerState>();
   late List<dynamic> imagesList = widget.productList['images'];
 
   @override
@@ -53,8 +52,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              FullScreenView(imagesList: imagesList),
+                          builder: (context) => FullScreenView(imagesList: imagesList),
                         ),
                       );
                     },
@@ -63,14 +61,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         SizedBox(
                           height: MediaQuery.of(context).size.height * 0.45,
                           child: Swiper(
-                            pagination: const SwiperPagination(
-                              builder: SwiperPagination.fraction,
-                            ),
+                            pagination: const SwiperPagination(builder: SwiperPagination.fraction),
                             itemCount: imagesList.length,
                             itemBuilder: (context, index) {
-                              return Image(
-                                image: NetworkImage(imagesList[index]),
-                              );
+                              return Image(image: NetworkImage(imagesList[index]));
                             },
                           ),
                         ),
@@ -92,10 +86,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           top: 20,
                           child: CircleAvatar(
                             backgroundColor: Colors.yellow,
-                            child: IconButton(
-                              onPressed: () {},
-                              icon: Icon(Icons.share),
-                            ),
+                            child: IconButton(onPressed: () {}, icon: Icon(Icons.share)),
                           ),
                         ),
                       ],
@@ -128,10 +119,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ),
                                 ),
                                 Text(
-                                  widget.productList['price'].toStringAsFixed(
-                                        2,
-                                      ) +
-                                      ('\$'),
+                                  widget.productList['price'].toStringAsFixed(2) + ('\$'),
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w600,
@@ -148,8 +136,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     .getWishItems
                                     .firstWhereOrNull(
                                       (product) =>
-                                          product.documentId ==
-                                          widget.productList['productId'],
+                                          product.documentId == widget.productList['productId'],
                                     );
                                 existingItemWishlist != null
                                     ? context.read<Wish>().removeThis(
@@ -166,35 +153,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       );
                               },
                               icon:
-                                  context
-                                          .watch<Wish>()
-                                          .getWishItems
-                                          .firstWhereOrNull(
-                                            (product) =>
-                                                product.documentId ==
-                                                widget.productList['productId'],
-                                          ) !=
+                                  context.watch<Wish>().getWishItems.firstWhereOrNull(
+                                        (product) =>
+                                            product.documentId == widget.productList['productId'],
+                                      ) !=
                                       null
-                                  ? const Icon(
-                                      Icons.favorite,
-                                      color: Colors.red,
-                                      size: 30,
-                                    )
-                                  : const Icon(
-                                      Icons.favorite_outline,
-                                      color: Colors.red,
-                                      size: 30,
-                                    ),
+                                  ? const Icon(Icons.favorite, color: Colors.red, size: 30)
+                                  : const Icon(Icons.favorite_outline, color: Colors.red, size: 30),
                             ),
                           ],
                         ),
-                        Text(
-                          "${widget.productList['quantity']} Pieces available in stock",
-                          style: TextStyle(
-                            color: Colors.blueGrey,
-                            fontSize: 16,
-                          ),
-                        ),
+
+                        widget.productList['quantity'] == 0
+                            ? const Text(
+                                "This Item is out of Stock",
+                                style: TextStyle(color: Colors.blueGrey, fontSize: 16),
+                              )
+                            : Text(
+                                "${widget.productList['quantity']} Pieces available in stock",
+                                style: TextStyle(color: Colors.blueGrey, fontSize: 16),
+                              ),
                         ProductDetailsLabel(label: '  Item Description  '),
                         Text(
                           widget.productList['productDescription'],
@@ -213,53 +191,43 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   SizedBox(
                     child: StreamBuilder<QuerySnapshot>(
                       stream: productsStream,
-                      builder:
-                          (
-                            BuildContext context,
-                            AsyncSnapshot<QuerySnapshot> snapshot,
-                          ) {
-                            if (snapshot.hasError) {
-                              return Text('Something went wrong');
-                            }
+                      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                        if (snapshot.hasError) {
+                          return Text('Something went wrong');
+                        }
 
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            if (snapshot.data!.docs.isEmpty) {
-                              return Center(
-                                child: Text(
-                                  "This category \n \n  has no items yet!",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 26,
-                                    color: Colors.blueGrey,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: "Acme",
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                              );
-                            }
-
-                            return SingleChildScrollView(
-                              child: StaggeredGridView.countBuilder(
-                                shrinkWrap: true,
-                                physics: NeverScrollableScrollPhysics(),
-                                crossAxisCount: 2,
-                                itemCount: snapshot.data!.docs.length,
-                                itemBuilder: (context, index) {
-                                  return ProductModel(
-                                    products: snapshot.data!.docs[index].data(),
-                                  );
-                                },
-                                staggeredTileBuilder: (index) =>
-                                    StaggeredTile.fit(1),
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (snapshot.data!.docs.isEmpty) {
+                          return Center(
+                            child: Text(
+                              "This category \n \n  has no items yet!",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 26,
+                                color: Colors.blueGrey,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: "Acme",
+                                letterSpacing: 1.5,
                               ),
-                            );
-                          },
+                            ),
+                          );
+                        }
+
+                        return SingleChildScrollView(
+                          child: StaggeredGridView.countBuilder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            itemCount: snapshot.data!.docs.length,
+                            itemBuilder: (context, index) {
+                              return ProductModel(products: snapshot.data!.docs[index].data());
+                            },
+                            staggeredTileBuilder: (index) => StaggeredTile.fit(1),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -277,9 +245,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => VisitStore(
-                                supplierId: widget.productList['cid'],
-                              ),
+                              builder: (context) =>
+                                  VisitStore(supplierId: widget.productList['cid']),
                             ),
                           );
                         },
@@ -291,27 +258,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  CartScreen(back: AppbarBackButton()),
+                              builder: (context) => CartScreen(back: AppbarBackButton()),
                             ),
                           );
                         },
                         icon: Padding(
                           padding: const EdgeInsets.all(2),
                           child: badge.Badge(
-                            showBadge: context.read<Cart>().getItems.isEmpty
-                                ? false
-                                : true,
-                            badgeStyle: badge.BadgeStyle(
-                              badgeColor: Colors.yellow,
-                            ),
+                            showBadge: context.read<Cart>().getItems.isEmpty ? false : true,
+                            badgeStyle: badge.BadgeStyle(badgeColor: Colors.yellow),
 
                             badgeContent: Text(
                               context.watch<Cart>().getItems.toString(),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                             ),
                             child: const Icon(Icons.shopping_cart),
                           ),
@@ -320,24 +279,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ],
                   ),
                   YellowButton(
-                    label: existingItemCart != null
-                        ? 'Added to cart'
-                        : 'ADD TO CART',
+                    label: existingItemCart != null ? 'Added to cart' : 'ADD TO CART',
                     onPressed: () {
-                      existingItemCart != null
-                          ? MyMessageHandler.showSnackBar(
-                              scaffoldKey,
-                              'This item already in cart',
-                            )
-                          : context.read<Cart>().addItem(
-                              widget.productList['productName'],
-                              widget.productList['price'],
-                              1,
-                              widget.productList['quantity'],
-                              widget.productList['images'],
-                              widget.productList['productId'],
-                              widget.productList['cid'],
-                            );
+                      if (widget.productList['quantity'] == 0) {
+                        MyMessageHandler.showSnackBar(scaffoldKey, "This Item is out of Stock");
+                      } else if (existingItemCart != null) {
+                        MyMessageHandler.showSnackBar(scaffoldKey, 'This item already in cart');
+                      } else {
+                        context.read<Cart>().addItem(
+                          widget.productList['productName'],
+                          widget.productList['price'],
+                          1,
+                          widget.productList['quantity'],
+                          widget.productList['images'],
+                          widget.productList['productId'],
+                          widget.productList['cid'],
+                        );
+                      }
                     },
                     width: .55,
                   ),
@@ -362,24 +320,12 @@ class ProductDetailsLabel extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            height: 40,
-            width: 50,
-            child: Divider(color: Colors.yellow[900], thickness: 1),
-          ),
+          SizedBox(height: 40, width: 50, child: Divider(color: Colors.yellow[900], thickness: 1)),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.yellow[900],
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(color: Colors.yellow[900], fontSize: 24, fontWeight: FontWeight.w600),
           ),
-          SizedBox(
-            height: 40,
-            width: 50,
-            child: Divider(color: Colors.yellow[900], thickness: 1),
-          ),
+          SizedBox(height: 40, width: 50, child: Divider(color: Colors.yellow[900], thickness: 1)),
         ],
       ),
     );

@@ -6,6 +6,7 @@ import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:sn_progress_dialog/progress_dialog.dart';
 import 'package:uuid/uuid.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -19,9 +20,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   int selectedValue = 1;
   late String orderId;
 
-  CollectionReference customers = FirebaseFirestore.instance.collection(
-    'customers',
-  );
+  CollectionReference customers = FirebaseFirestore.instance.collection('customers');
 
   void showProgress() {
     ProgressDialog progress = ProgressDialog(context: context);
@@ -44,14 +43,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Material(
-            child: const Center(child: CircularProgressIndicator()),
-          );
+          return Material(child: const Center(child: CircularProgressIndicator()));
         }
 
         if (snapshot.connectionState == ConnectionState.done) {
-          Map<String, dynamic> data =
-              snapshot.data!.data() as Map<String, dynamic>;
+          Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
           return Material(
             color: Colors.grey[200],
             child: SafeArea(
@@ -76,17 +72,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text("Total", style: TextStyle(fontSize: 20)),
                                   Text(
@@ -97,42 +89,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               ),
                               Divider(color: Colors.grey, thickness: 2),
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     "Total Order",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey,
-                                    ),
+                                    style: TextStyle(fontSize: 16, color: Colors.grey),
                                   ),
                                   Text(
                                     '${totalPrice.toStringAsFixed(2)} + USD',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey,
-                                    ),
+                                    style: TextStyle(fontSize: 16, color: Colors.grey),
                                   ),
                                 ],
                               ),
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     "Shipping cost",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey,
-                                    ),
+                                    style: TextStyle(fontSize: 16, color: Colors.grey),
                                   ),
                                   Text(
                                     "10.00 USD",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey,
-                                    ),
+                                    style: TextStyle(fontSize: 16, color: Colors.grey),
                                   ),
                                 ],
                               ),
@@ -158,9 +136,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   });
                                 },
                                 title: const Text("Cash on Delivery"),
-                                subtitle: const Text(
-                                  "Pay with cash upon delivery.",
-                                ),
+                                subtitle: const Text("Pay with cash upon delivery."),
                               ),
                               RadioListTile(
                                 value: 2,
@@ -175,18 +151,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   children: [
                                     Icon(Icons.payment, color: Colors.blue),
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 15,
-                                      ),
+                                      padding: const EdgeInsets.symmetric(horizontal: 15),
                                       child: Icon(
                                         FontAwesomeIcons.ccMastercard,
                                         color: Colors.blue,
                                       ),
                                     ),
-                                    Icon(
-                                      FontAwesomeIcons.ccVisa,
-                                      color: Colors.blue,
-                                    ),
+                                    Icon(FontAwesomeIcons.ccVisa, color: Colors.blue),
                                   ],
                                 ),
                               ),
@@ -201,15 +172,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 title: const Text("Pay with paypal"),
                                 subtitle: Row(
                                   children: [
-                                    Icon(
-                                      FontAwesomeIcons.ccPaypal,
-                                      color: Colors.blue,
-                                    ),
+                                    Icon(FontAwesomeIcons.ccPaypal, color: Colors.blue),
                                     SizedBox(width: 15),
-                                    Icon(
-                                      FontAwesomeIcons.paypal,
-                                      color: Colors.blue,
-                                    ),
+                                    Icon(FontAwesomeIcons.paypal, color: Colors.blue),
                                   ],
                                 ),
                               ),
@@ -235,8 +200,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.only(bottom: 100),
                                 child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceAround,
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                                   children: [
                                     Text(
                                       "Pay At Home ${totalPaid.toStringAsFixed(2)} + \$",
@@ -246,45 +210,55 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                       label: 'Confirm Payment',
                                       onPressed: () async {
                                         showProgress();
-                                        for (var item
-                                            in context.read<Cart>().getItems) {
-                                          CollectionReference orderRef =
-                                              FirebaseFirestore.instance
-                                                  .collection('orders');
+                                        for (var item in context.read<Cart>().getItems) {
+                                          CollectionReference orderRef = FirebaseFirestore.instance
+                                              .collection('orders');
                                           orderId = Uuid().v4();
-                                          await orderRef.doc(orderId).set({
-                                            'cid': data['cid'],
-                                            'custname': data['name'],
-                                            'email': data['email'],
-                                            'phone': data['phone'],
-                                            'address': data['address'],
-                                            'profileImage':
-                                                data['profileimage'],
+                                          await orderRef
+                                              .doc(orderId)
+                                              .set({
+                                                'cid': data['cid'],
+                                                'custname': data['name'],
+                                                'email': data['email'],
+                                                'phone': data['phone'],
+                                                'address': data['address'],
+                                                'profileImage': data['profileimage'],
 
-                                            'sid': item.supplierId,
+                                                'sid': item.supplierId,
 
-                                            'proid': item.documentId,
-                                            'orderId': orderId,
-                                            'orderImage': item.imagesUrl[0],
-                                            'orderqty': item.qty,
-                                            'orderprice': item.qty * item.price,
+                                                'proid': item.documentId,
+                                                'orderId': orderId,
+                                                'orderImage': item.imagesUrl[0],
+                                                'orderqty': item.qty,
+                                                'orderprice': item.qty * item.price,
 
-                                            'deliverystatus': 'preparing',
-                                            "deliverydate": "",
-                                            "orderdate": DateTime.now(),
-                                            'paymentstatus': 'cash on delivery',
-                                            'orderreview': false,
-                                          }).whenComplete(() async {
-                                            await FirebaseFirestore.instance.runTransaction((transaction) async {
-                                              DocumentReference documentReference = FirebaseFirestore.instance.collection('products').doc(item.documentId);
-                                              DocumentSnapshot snapshot2   = await transaction.get(documentReference);
-                                              transaction.update(documentReference, {'quantity  ': snapshot2['quantity'] - item.qty});
-                                              await transaction.get();
-                                            })
-                                          });
+                                                'deliverystatus': 'preparing',
+                                                "deliverydate": "",
+                                                "orderdate": DateTime.now(),
+                                                'paymentstatus': 'cash on delivery',
+                                                'orderreview': false,
+                                              })
+                                              .whenComplete(() async {
+                                                await FirebaseFirestore.instance.runTransaction((
+                                                  transaction,
+                                                ) async {
+                                                  DocumentReference documentReference =
+                                                      FirebaseFirestore.instance
+                                                          .collection('products')
+                                                          .doc(item.documentId);
+                                                  DocumentSnapshot snapshot2 = await transaction
+                                                      .get(documentReference);
+                                                  transaction.update(documentReference, {
+                                                    'quantity  ': snapshot2['quantity'] - item.qty,
+                                                  });
+                                                });
+                                              });
                                         }
                                         context.read<Cart>().clearCart();
-                                        Navigator.popUntil(context, ModalRoute.withName("/customer_home"));
+                                        Navigator.popUntil(
+                                          context,
+                                          ModalRoute.withName("/customer_home"),
+                                        );
                                       },
                                       width: .9,
                                     ),
