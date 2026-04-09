@@ -268,8 +268,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                             "orderdate": DateTime.now(),
                                             'paymentstatus': 'cash on delivery',
                                             'orderreview': false,
+                                          }).whenComplete(() async {
+                                            await FirebaseFirestore.instance.runTransaction((transaction) async {
+                                              DocumentReference documentReference = FirebaseFirestore.instance.collection('products').doc(item.documentId);
+                                              DocumentSnapshot snapshot2   = await transaction.get(documentReference);
+                                              transaction.update(documentReference, {'quantity  ': snapshot2['quantity'] - item.qty});
+                                              await transaction.get();
+                                            })
                                           });
                                         }
+                                        context.read<Cart>().clearCart();
+                                        Navigator.popUntil(context, ModalRoute.withName("/customer_home"));
                                       },
                                       width: .9,
                                     ),
