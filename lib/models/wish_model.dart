@@ -20,11 +20,7 @@ class WishListModel extends StatelessWidget {
           height: 106,
           child: Row(
             children: [
-              SizedBox(
-                height: 100,
-                width: 120,
-                child: Image.network(product.imagesUrl[0]),
-              ),
+              SizedBox(height: 100, width: 120, child: Image.network(product.imagesUrl[0])),
               Flexible(
                 child: Padding(
                   padding: const EdgeInsets.all(6),
@@ -62,11 +58,10 @@ class WishListModel extends StatelessWidget {
                               ),
                               const SizedBox(width: 10),
                               context.watch<Cart>().getItems.firstWhereOrNull(
-                                        (element) =>
-                                            element.documentId ==
-                                            product.documentId,
-                                      ) !=
-                                      null
+                                            (element) => element.documentId == product.documentId,
+                                          ) !=
+                                          null ||
+                                      product.quantity == 0
                                   ? const SizedBox()
                                   : IconButton(
                                       onPressed: () {
