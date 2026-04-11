@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:multi_store_app/minor_screens/payment_screen.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
@@ -14,9 +15,7 @@ class PlaceOrderScreen extends StatefulWidget {
 }
 
 class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
-  CollectionReference customers = FirebaseFirestore.instance.collection(
-    'customers',
-  );
+  CollectionReference customers = FirebaseFirestore.instance.collection('customers');
 
   @override
   Widget build(BuildContext context) {
@@ -33,14 +32,11 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Material(
-            child: const Center(child: CircularProgressIndicator()),
-          );
+          return Material(child: const Center(child: CircularProgressIndicator()));
         }
 
         if (snapshot.connectionState == ConnectionState.done) {
-          Map<String, dynamic> data =
-              snapshot.data!.data() as Map<String, dynamic>;
+          Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
           return Material(
             color: Colors.grey[200],
             child: SafeArea(
@@ -65,10 +61,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -111,21 +104,17 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                                             child: SizedBox(
                                               height: 100,
                                               width: 100,
-                                              child: Image.network(
-                                                order.imagesUrl[0],
-                                              ),
+                                              child: Image.network(order.imagesUrl[0]),
                                             ),
                                           ),
                                           Flexible(
                                             child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.spaceAround,
+                                              mainAxisAlignment: MainAxisAlignment.spaceAround,
                                               children: [
                                                 Text(
                                                   order.name,
                                                   maxLines: 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
+                                                  overflow: TextOverflow.ellipsis,
                                                   style: TextStyle(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.w600,
@@ -133,35 +122,28 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                                                   ),
                                                 ),
                                                 Padding(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        vertical: 4,
-                                                        horizontal: 12,
-                                                      ),
+                                                  padding: const EdgeInsets.symmetric(
+                                                    vertical: 4,
+                                                    horizontal: 12,
+                                                  ),
                                                   child: Row(
                                                     mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceBetween,
+                                                        MainAxisAlignment.spaceBetween,
                                                     children: [
                                                       Text(
-                                                        order.price
-                                                            .toStringAsFixed(2),
+                                                        order.price.toStringAsFixed(2),
                                                         style: TextStyle(
                                                           fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color:
-                                                              Colors.grey[600],
+                                                          fontWeight: FontWeight.w600,
+                                                          color: Colors.grey[600],
                                                         ),
                                                       ),
                                                       Text(
                                                         ' x${order.qty.toString()}',
                                                         style: TextStyle(
                                                           fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color:
-                                                              Colors.grey[600],
+                                                          fontWeight: FontWeight.w600,
+                                                          color: Colors.grey[600],
                                                         ),
                                                       ),
                                                     ],
@@ -189,7 +171,12 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     padding: const EdgeInsets.all(8.0),
                     child: YellowButton(
                       label: 'Confirm ${totalPrice.toStringAsFixed(2)} + USD',
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => PaymentScreen()),
+                        );
+                      },
                       width: 1,
                     ),
                   ),
