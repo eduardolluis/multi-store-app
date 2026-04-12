@@ -5,7 +5,7 @@ import 'package:multi_store_app/minor_screens/product_detail.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
 import 'package:provider/provider.dart';
 
-// Helper: compute sale price from raw product map
+// ── Sale price helper (shared across the app) ─────────────────────────────────
 double computeSalePrice(dynamic products) {
   final price = (products['price'] as num?)?.toDouble() ?? 0.0;
   final discount = (products['discount'] as num?)?.toInt() ?? 0;
@@ -13,41 +13,30 @@ double computeSalePrice(dynamic products) {
   return price * (1 - discount / 100);
 }
 
-class ProductModel extends StatefulWidget {
+class ProductModel extends StatelessWidget {
   final dynamic products;
   const ProductModel({super.key, required this.products});
 
   @override
-  State<ProductModel> createState() => _ProductModelState();
-}
-
-class _ProductModelState extends State<ProductModel> {
-  late var existingItemWishlist = context.read<Wish>().getWishItems.firstWhereOrNull(
-    (product) => product.documentId == widget.products['productId'],
-  );
-
-  @override
   Widget build(BuildContext context) {
-    final price = (widget.products['price'] as num?)?.toDouble() ?? 0.0;
-    final discount = (widget.products['discount'] as num?)?.toInt() ?? 0;
-    final salePrice = computeSalePrice(widget.products);
+    final price = (products['price'] as num?)?.toDouble() ?? 0.0;
+    final discount = (products['discount'] as num?)?.toInt() ?? 0;
+    final salePrice = computeSalePrice(products);
     final hasDiscount = discount > 0 && discount <= 100;
+    final isOwner = products['cid'] == FirebaseAuth.instance.currentUser?.uid;
 
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailScreen(productList: widget.products),
-          ),
-        );
-      },
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ProductDetailScreen(productList: products)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Container(
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
           child: Column(
             children: [
+              // ── Image + discount badge ──
               Stack(
                 children: [
                   ClipRRect(
@@ -57,7 +46,7 @@ class _ProductModelState extends State<ProductModel> {
                     ),
                     child: Container(
                       constraints: const BoxConstraints(minHeight: 100, maxHeight: 250),
-                      child: Image(image: NetworkImage(widget.products['images'][0])),
+                      child: Image(image: NetworkImage(products['images'][0])),
                     ),
                   ),
                   if (hasDiscount)
@@ -82,12 +71,14 @@ class _ProductModelState extends State<ProductModel> {
                     ),
                 ],
               ),
+
+              // ── Name + price + wishlist ──
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   children: [
                     Text(
-                      widget.products['productName'],
+                      products['productName'],
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -99,6 +90,7 @@ class _ProductModelState extends State<ProductModel> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        // ── Price display ──
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -121,40 +113,21 @@ class _ProductModelState extends State<ProductModel> {
                             ),
                           ],
                         ),
-                        widget.products['cid'] == FirebaseAuth.instance.currentUser!.uid
+
+                        // ── Wishlist / edit button ──
+                        isOwner
                             ? IconButton(
                                 onPressed: () {},
                                 icon: const Icon(Icons.edit, color: Colors.black),
                               )
-                            : IconButton(
-                                onPressed: () {
-                                  existingItemWishlist != null
-                                      ? context.read<Wish>().removeThis(
-                                          widget.products['productId'],
-                                        )
-                                      : context.read<Wish>().addWishItem(
-                                          widget.products['productName'],
-                                          price,
-                                          salePrice,
-                                          1,
-                                          widget.products['quantity'],
-                                          widget.products['images'],
-                                          widget.products['productId'],
-                                          widget.products['cid'],
-                                        );
-                                },
-                                icon:
-                                    context.watch<Wish>().getWishItems.firstWhereOrNull(
-                                          (product) =>
-                                              product.documentId == widget.products['productId'],
-                                        ) !=
-                                        null
-                                    ? const Icon(Icons.favorite, color: Colors.red, size: 30)
-                                    : const Icon(
-                                        Icons.favorite_outline,
-                                        color: Colors.red,
-                                        size: 30,
-                                      ),
+                            : _WishlistButton(
+                                productId: products['productId'],
+                                productName: products['productName'],
+                                price: price,
+                                salePrice: salePrice,
+                                quantity: (products['quantity'] as num?)?.toInt() ?? 0,
+                                images: products['images'],
+                                supplierId: products['cid'],
                               ),
                       ],
                     ),
@@ -165,6 +138,54 @@ class _ProductModelState extends State<ProductModel> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Extracted wishlist button avoids stale state on list rebuilds ─────────────
+class _WishlistButton extends StatelessWidget {
+  final String productId;
+  final String productName;
+  final double price;
+  final double salePrice;
+  final int quantity;
+  final dynamic images;
+  final String supplierId;
+
+  const _WishlistButton({
+    required this.productId,
+    required this.productName,
+    required this.price,
+    required this.salePrice,
+    required this.quantity,
+    required this.images,
+    required this.supplierId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final inWishlist =
+        context.watch<Wish>().getWishItems.firstWhereOrNull((p) => p.documentId == productId) !=
+        null;
+
+    return IconButton(
+      onPressed: () {
+        if (inWishlist) {
+          context.read<Wish>().removeThis(productId);
+        } else {
+          context.read<Wish>().addWishItem(
+            productName,
+            price, // original price stored for display/strikethrough
+            salePrice, // actual price paid — passed to cart from wish
+            1,
+            quantity,
+            images,
+            productId,
+            supplierId,
+          );
+        }
+      },
+      icon: Icon(inWishlist ? Icons.favorite : Icons.favorite_outline, color: Colors.red, size: 30),
     );
   }
 }
