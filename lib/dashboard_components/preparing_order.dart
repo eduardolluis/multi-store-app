@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:multi_store_app/models/order_model.dart';
-import 'package:multi_store_app/models/supplier_order_model.dart' hide EmptyOrdersView;
+import 'package:multi_store_app/models/supplier_order_model.dart';
+import 'package:multi_store_app/widgets/order_widget.dart';
 
 class Preparing extends StatelessWidget {
   const Preparing({super.key});

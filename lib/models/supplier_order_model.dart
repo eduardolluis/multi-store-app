@@ -1,10 +1,68 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:multi_store_app/widgets/order_widget.dart';
+
+// ── Helper functions ──────────────────────────────────────────────────────────
+
+const _statusOptions = ['pending', 'preparing', 'shipped', 'delivered', 'cancelled'];
+
+String normalizeStatus(String v) {
+  final n = v.trim().toLowerCase();
+  return _statusOptions.contains(n) ? n : 'pending';
+}
+
+String capitalize(String v) => v.isEmpty ? v : v[0].toUpperCase() + v.substring(1);
+
+String formatDate(DateTime? date) {
+  if (date == null) return 'Not available';
+  final d = date.day.toString().padLeft(2, '0');
+  final mo = date.month.toString().padLeft(2, '0');
+  final h = date.hour % 12 == 0 ? 12 : date.hour % 12;
+  final mi = date.minute.toString().padLeft(2, '0');
+  final period = date.hour >= 12 ? 'PM' : 'AM';
+  return '$d/$mo/${date.year} • $h:$mi $period';
+}
+
+dynamic _firstOf(Map<String, dynamic> data, List<String> keys) {
+  for (final k in keys) {
+    if (data.containsKey(k) && data[k] != null) return data[k];
+  }
+  return null;
+}
+
+String readStr(dynamic v, [String fb = '']) {
+  if (v == null) return fb;
+  final t = v.toString().trim();
+  return t.isEmpty ? fb : t;
+}
+
+double readDouble(dynamic v, [double fb = 0]) {
+  if (v == null) return fb;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString()) ?? fb;
+}
+
+int readInt(dynamic v, [int fb = 0]) {
+  if (v == null) return fb;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  return int.tryParse(v.toString()) ?? fb;
+}
+
+DateTime? readDate(dynamic v) {
+  if (v == null) return null;
+  if (v is Timestamp) return v.toDate();
+  if (v is DateTime) return v;
+  if (v is String) return DateTime.tryParse(v);
+  if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+  return null;
+}
+
+// ── Main widget ───────────────────────────────────────────────────────────────
 
 class SuppOrderModel extends StatefulWidget {
   final QueryDocumentSnapshot orderDoc;
   final String userId;
-
   const SuppOrderModel({super.key, required this.orderDoc, required this.userId});
 
   @override
@@ -12,284 +70,116 @@ class SuppOrderModel extends StatefulWidget {
 }
 
 class _SuppOrderModelState extends State<SuppOrderModel> {
-  static const List<String> _statusOptions = [
-    'pending',
-    'preparing',
-    'shipped',
-    'delivered',
-    'cancelled',
-  ];
-
-  late String _selectedStatus;
-  bool _isUpdatingStatus = false;
-  bool _isSavingDate = false;
-  DateTime? _estimatedDelivery;
+  late String _status;
+  bool _updatingStatus = false;
+  bool _savingDate = false;
+  DateTime? _estDelivery;
 
   Map<String, dynamic> get _data => widget.orderDoc.data() as Map<String, dynamic>;
 
   @override
   void initState() {
     super.initState();
-    _selectedStatus = _normalizeStatus(
-      _readString(
-        _firstExistingValue(['deliverystatus', 'deliveryStatus', 'status', 'orderStatus']),
-        'pending',
-      ),
+    _status = normalizeStatus(
+      readStr(_firstOf(_data, ['deliverystatus', 'deliveryStatus', 'status', 'orderStatus'])),
     );
+    final existing = _firstOf(_data, ['estimatedDelivery']);
+    if (existing is Timestamp) _estDelivery = existing.toDate();
+  }
 
-    // Load existing estimated delivery if any
-    final existing = _firstExistingValue(['estimatedDelivery']);
-    if (existing is Timestamp) {
-      _estimatedDelivery = existing.toDate();
+  void _snack(String msg) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
+
+  Future<void> _saveStatus() async {
+    setState(() => _updatingStatus = true);
+    try {
+      await FirebaseFirestore.instance.collection('orders').doc(widget.orderDoc.id).update({
+        'deliverystatus': _status,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      _snack('Order status updated successfully');
+    } catch (_) {
+      _snack('Failed to update order status');
+    } finally {
+      if (mounted) setState(() => _updatingStatus = false);
     }
   }
 
-  dynamic _firstExistingValue(List<String> keys) {
-    for (final key in keys) {
-      if (_data.containsKey(key) && _data[key] != null) {
-        return _data[key];
-      }
-    }
-    return null;
-  }
-
-  String _readString(dynamic value, [String fallback = '']) {
-    if (value == null) return fallback;
-    final text = value.toString().trim();
-    return text.isEmpty ? fallback : text;
-  }
-
-  double _readDouble(dynamic value, [double fallback = 0]) {
-    if (value == null) return fallback;
-    if (value is num) return value.toDouble();
-    return double.tryParse(value.toString()) ?? fallback;
-  }
-
-  int _readInt(dynamic value, [int fallback = 0]) {
-    if (value == null) return fallback;
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    return int.tryParse(value.toString()) ?? fallback;
-  }
-
-  DateTime? _readDate(dynamic value) {
-    if (value == null) return null;
-    if (value is Timestamp) return value.toDate();
-    if (value is DateTime) return value;
-    if (value is String) return DateTime.tryParse(value);
-    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
-    return null;
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'Not available';
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
-    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
-    final minute = date.minute.toString().padLeft(2, '0');
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-    return '$day/$month/$year • $hour:$minute $period';
-  }
-
-  String _normalizeStatus(String value) {
-    final normalized = value.trim().toLowerCase();
-    if (_statusOptions.contains(normalized)) return normalized;
-    return 'pending';
-  }
-
-  String _capitalize(String value) {
-    if (value.isEmpty) return value;
-    return value[0].toUpperCase() + value.substring(1);
-  }
-
-  Color _statusColor(String status) {
-    switch (_normalizeStatus(status)) {
-      case 'delivered':
-        return const Color(0xFF1FA971);
-      case 'shipped':
-        return const Color(0xFF2F80ED);
-      case 'preparing':
-        return const Color(0xFFF2994A);
-      case 'pending':
-        return const Color(0xFFE67E22);
-      case 'cancelled':
-        return const Color(0xFFEB5757);
-      default:
-        return const Color(0xFF7F56D9);
+  Future<void> _saveDeliveryDate() async {
+    if (_estDelivery == null) return _snack('Please select a delivery date first');
+    setState(() => _savingDate = true);
+    try {
+      await FirebaseFirestore.instance.collection('orders').doc(widget.orderDoc.id).update({
+        'estimatedDelivery': Timestamp.fromDate(_estDelivery!),
+        'deliverydate': formatDate(_estDelivery),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      _snack('Estimated delivery date saved');
+    } catch (_) {
+      _snack('Failed to save delivery date');
+    } finally {
+      if (mounted) setState(() => _savingDate = false);
     }
   }
 
-  IconData _statusIcon(String status) {
-    switch (_normalizeStatus(status)) {
-      case 'delivered':
-        return Icons.check_circle_rounded;
-      case 'shipped':
-        return Icons.local_shipping_rounded;
-      case 'preparing':
-        return Icons.inventory_2_rounded;
-      case 'pending':
-        return Icons.schedule_rounded;
-      case 'cancelled':
-        return Icons.cancel_rounded;
-      default:
-        return Icons.shopping_bag_rounded;
-    }
-  }
-
-  Future<void> _pickDeliveryDate() async {
+  Future<void> _pickDate() async {
     final now = DateTime.now();
-
     final picked = await showDatePicker(
       context: context,
-      initialDate: _estimatedDelivery ?? now.add(const Duration(days: 3)),
+      initialDate: _estDelivery ?? now.add(const Duration(days: 3)),
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
-      helpText: 'Select estimated delivery date',
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF111827),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF111827),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: const Color(0xFF111827)),
-            ),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF111827),
+            onPrimary: Colors.white,
+            onSurface: Color(0xFF111827),
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
-
     if (picked == null || !mounted) return;
 
-    final pickedTime = await showTimePicker(
+    final time = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(_estimatedDelivery ?? now.add(const Duration(days: 3))),
-      helpText: 'Select estimated delivery time',
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF111827),
-              onPrimary: Colors.white,
-              onSurface: Color(0xFF111827),
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(foregroundColor: const Color(0xFF111827)),
-            ),
+      initialTime: TimeOfDay.fromDateTime(_estDelivery ?? now.add(const Duration(days: 3))),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF111827),
+            onPrimary: Colors.white,
+            onSurface: Color(0xFF111827),
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
-
     if (!mounted) return;
 
     setState(() {
-      _estimatedDelivery = pickedTime == null
+      _estDelivery = time == null
           ? picked
-          : DateTime(picked.year, picked.month, picked.day, pickedTime.hour, pickedTime.minute);
+          : DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
     });
-  }
-
-  Future<void> _saveEstimatedDelivery() async {
-    if (_estimatedDelivery == null) {
-      _showSnackBar('Please select a delivery date first');
-      return;
-    }
-
-    setState(() => _isSavingDate = true);
-
-    try {
-      await FirebaseFirestore.instance.collection('orders').doc(widget.orderDoc.id).update({
-        'estimatedDelivery': Timestamp.fromDate(_estimatedDelivery!),
-        'deliverydate': _formatDate(_estimatedDelivery),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      _showSnackBar('Estimated delivery date saved');
-    } catch (_) {
-      _showSnackBar('Failed to save delivery date');
-    } finally {
-      if (mounted) setState(() => _isSavingDate = false);
-    }
-  }
-
-  Future<void> _saveStatus() async {
-    setState(() => _isUpdatingStatus = true);
-
-    try {
-      await FirebaseFirestore.instance.collection('orders').doc(widget.orderDoc.id).update({
-        'deliverystatus': _selectedStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      _showSnackBar('Order status updated successfully');
-    } catch (_) {
-      _showSnackBar('Failed to update order status');
-    } finally {
-      if (mounted) setState(() => _isUpdatingStatus = false);
-    }
-  }
-
-  void _showSnackBar(String text) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(text), behavior: SnackBarBehavior.floating));
   }
 
   @override
   Widget build(BuildContext context) {
-    final orderName = _readString(
-      _firstExistingValue(['ordername', 'orderName', 'productName', 'name']),
+    final name = readStr(
+      _firstOf(_data, ['ordername', 'orderName', 'productName', 'name']),
       'Unknown product',
     );
-
-    final orderImage = _readString(
-      _firstExistingValue(['orderImage', 'orderimage', 'productImage', 'image']),
-      '',
+    final image = readStr(_firstOf(_data, ['orderImage', 'orderimage', 'productImage', 'image']));
+    final status = normalizeStatus(
+      readStr(_firstOf(_data, ['deliverystatus', 'deliveryStatus', 'status']), _status),
     );
-
-    final status = _normalizeStatus(
-      _readString(
-        _firstExistingValue(['deliverystatus', 'deliveryStatus', 'status', 'orderStatus']),
-        _selectedStatus,
-      ),
-    );
-
-    final price = _readDouble(_firstExistingValue(['orderprice', 'orderPrice', 'price']));
-    final qty = _readInt(_firstExistingValue(['orderqty', 'orderQty', 'qty', 'quantity']), 1);
+    final price = readDouble(_firstOf(_data, ['orderprice', 'orderPrice', 'price']));
+    final qty = readInt(_firstOf(_data, ['orderqty', 'orderQty', 'qty', 'quantity']), 1);
     final safeQty = qty <= 0 ? 1 : qty;
-    final total = price * safeQty;
-
-    final productId = _readString(_firstExistingValue(['productid', 'productId']), 'N/A');
-    final customerName = _readString(
-      _firstExistingValue(['customerName', 'customername', 'buyerName', 'fullName', 'custname']),
-      'Unknown customer',
-    );
-    final customerId = _readString(_firstExistingValue(['cid', 'customerId', 'buyerId']), 'N/A');
-    final customerEmail = _readString(
-      _firstExistingValue(['customerEmail', 'buyerEmail', 'email']),
-      'Not available',
-    );
-    final customerPhone = _readString(
-      _firstExistingValue(['customerPhone', 'phone', 'buyerPhone']),
-      'Not available',
-    );
-    final shippingAddress = _readString(
-      _firstExistingValue(['address', 'customerAddress', 'shippingAddress', 'fullAddress']),
-      'Not available',
-    );
-    final paymentStatus = _readString(
-      _firstExistingValue(['paymentStatus', 'paymentstatus']),
-      'Not available',
-    );
-    final orderDate = _formatDate(
-      _readDate(_firstExistingValue(['orderDate', 'createdAt', 'date', 'timestamp', 'orderdate'])),
-    );
-
-    final statusColor = _statusColor(status);
+    final statusColor = orderStatusColor(status);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -315,24 +205,9 @@ class _SuppOrderModelState extends State<SuppOrderModel> {
           childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          leading: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Container(
-              width: 64,
-              height: 64,
-              color: const Color(0xFFF1F3F7),
-              child: orderImage.isEmpty
-                  ? const Icon(Icons.image_outlined, color: Colors.grey)
-                  : Image.network(
-                      orderImage,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.broken_image_outlined, color: Colors.grey),
-                    ),
-            ),
-          ),
+          leading: _SupplierOrderImage(url: image),
           title: Text(
-            orderName,
+            name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -347,303 +222,67 @@ class _SuppOrderModelState extends State<SuppOrderModel> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _SoftChip(icon: Icons.person_outline_rounded, label: customerName),
-                _SoftChip(icon: Icons.shopping_bag_outlined, label: 'Qty: $safeQty'),
-                _SoftChip(icon: Icons.attach_money_rounded, label: total.toStringAsFixed(2)),
-                _StatusChip(
-                  label: _capitalize(status),
+                SoftChip(
+                  icon: Icons.person_outline_rounded,
+                  label: readStr(
+                    _firstOf(_data, ['custname', 'customerName', 'buyerName']),
+                    'Unknown',
+                  ),
+                ),
+                SoftChip(icon: Icons.shopping_bag_outlined, label: 'Qty: $safeQty'),
+                SoftChip(
+                  icon: Icons.attach_money_rounded,
+                  label: (price * safeQty).toStringAsFixed(2),
+                ),
+                StatusChip(
+                  label: capitalize(status),
                   color: statusColor,
-                  icon: _statusIcon(status),
+                  icon: orderStatusIcon(status),
                 ),
               ],
             ),
           ),
           children: [
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Order Info ──────────────────────────────────────
-                  const _SectionHeader(
-                    icon: Icons.receipt_long_rounded,
-                    title: 'Order Information',
-                  ),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _InfoBox(title: 'Order ID', value: widget.orderDoc.id),
-                      _InfoBox(title: 'Product ID', value: productId),
-                      _InfoBox(title: 'Product', value: orderName),
-                      _InfoBox(title: 'Unit Price', value: '\$${price.toStringAsFixed(2)}'),
-                      _InfoBox(title: 'Quantity', value: safeQty.toString()),
-                      _InfoBox(title: 'Total', value: '\$${total.toStringAsFixed(2)}'),
-                      _InfoBox(title: 'Payment', value: paymentStatus),
-                      _InfoBox(title: 'Order Date', value: orderDate),
-                      if (_estimatedDelivery != null)
-                        _InfoBox(title: 'Est. Delivery', value: _formatDate(_estimatedDelivery)),
-                    ],
-                  ),
+            OrderExpansionContainer(
+              children: [
+                // ── Order info ──
+                _OrderInfoSection(
+                  data: _data,
+                  orderId: widget.orderDoc.id,
+                  name: name,
+                  price: price,
+                  safeQty: safeQty,
+                  estDelivery: _estDelivery,
+                ),
+                const SizedBox(height: 18),
 
-                  const SizedBox(height: 18),
+                // ── Customer info ──
+                _CustomerInfoSection(data: _data),
+                const SizedBox(height: 18),
 
-                  // ── Customer Info ───────────────────────────────────
-                  const _SectionHeader(icon: Icons.person_rounded, title: 'Customer Information'),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _InfoBox(title: 'Customer', value: customerName),
-                      _InfoBox(title: 'Customer ID', value: customerId),
-                      _InfoBox(title: 'Email', value: customerEmail),
-                      _InfoBox(title: 'Phone', value: customerPhone),
-                      _InfoBox(title: 'Address', value: shippingAddress),
-                    ],
-                  ),
+                // ── Delivery date ──
+                _DeliveryDateSection(
+                  estDelivery: _estDelivery,
+                  saving: _savingDate,
+                  onPickDate: _pickDate,
+                  onQuickDate: (days) =>
+                      setState(() => _estDelivery = DateTime.now().add(Duration(days: days))),
+                  onSave: _saveDeliveryDate,
+                ),
+                const SizedBox(height: 18),
 
-                  const SizedBox(height: 18),
-
-                  // ── Estimated Delivery ──────────────────────────────
-                  const _SectionHeader(
-                    icon: Icons.calendar_month_rounded,
-                    title: 'Estimated Delivery',
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Date display / picker button
-                  InkWell(
-                    onTap: _isSavingDate ? null : _pickDeliveryDate,
-                    borderRadius: BorderRadius.circular(18),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: _estimatedDelivery != null
-                              ? const Color(0xFF111827)
-                              : const Color(0xFFE5E7EB),
-                          width: _estimatedDelivery != null ? 1.4 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF111827),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.calendar_today_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _estimatedDelivery == null
-                                      ? 'Tap to select date & time'
-                                      : _formatDate(_estimatedDelivery),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: _estimatedDelivery == null
-                                        ? const Color(0xFF9CA3AF)
-                                        : const Color(0xFF111827),
-                                  ),
-                                ),
-                                if (_estimatedDelivery != null)
-                                  const Text(
-                                    'Tap to change',
-                                    style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            color: _estimatedDelivery != null
-                                ? const Color(0xFF111827)
-                                : const Color(0xFF9CA3AF),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Quick date shortcuts
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _QuickDateChip(
-                        label: '+1 day',
-                        onTap: () {
-                          setState(() {
-                            _estimatedDelivery = DateTime.now().add(const Duration(days: 1));
-                          });
-                        },
-                      ),
-                      _QuickDateChip(
-                        label: '+3 days',
-                        onTap: () {
-                          setState(() {
-                            _estimatedDelivery = DateTime.now().add(const Duration(days: 3));
-                          });
-                        },
-                      ),
-                      _QuickDateChip(
-                        label: '+1 week',
-                        onTap: () {
-                          setState(() {
-                            _estimatedDelivery = DateTime.now().add(const Duration(days: 7));
-                          });
-                        },
-                      ),
-                      _QuickDateChip(
-                        label: '+2 weeks',
-                        onTap: () {
-                          setState(() {
-                            _estimatedDelivery = DateTime.now().add(const Duration(days: 14));
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Save date button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _isSavingDate || _estimatedDelivery == null
-                          ? null
-                          : _saveEstimatedDelivery,
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: const Color(0xFF111827),
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: const Color(0xFFE5E7EB),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      icon: _isSavingDate
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.event_available_rounded),
-                      label: Text(
-                        _isSavingDate ? 'Saving...' : 'Save Delivery Date',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  // ── Delivery Status ─────────────────────────────────
-                  const _SectionHeader(
-                    icon: Icons.local_shipping_rounded,
-                    title: 'Update Delivery Status',
-                  ),
-                  const SizedBox(height: 14),
-                  DropdownButtonFormField<String>(
-                    value: _selectedStatus,
-                    items: _statusOptions.map((statusValue) {
-                      return DropdownMenuItem<String>(
-                        value: statusValue,
-                        child: Text(_capitalize(statusValue)),
-                      );
-                    }).toList(),
-                    onChanged: _isUpdatingStatus
-                        ? null
-                        : (value) {
-                            if (value == null) return;
-                            setState(() => _selectedStatus = value);
-                          },
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        borderSide: BorderSide(color: statusColor, width: 1.4),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Quick status buttons
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _statusOptions.map((s) {
-                      return _QuickStatusButton(
-                        label: _capitalize(s),
-                        selected: _selectedStatus == s,
-                        color: _statusColor(s),
-                        onTap: () => setState(() => _selectedStatus = s),
-                      );
-                    }).toList(),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Save status button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _isUpdatingStatus ? null : _saveStatus,
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: const Color(0xFF111827),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      icon: _isUpdatingStatus
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.save_rounded),
-                      label: Text(
-                        _isUpdatingStatus ? 'Updating...' : 'Save Status',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                // ── Status update ──
+                _StatusUpdateSection(
+                  selectedStatus: _status,
+                  updating: _updatingStatus,
+                  statusColor: statusColor,
+                  onChanged: (v) {
+                    if (v != null) setState(() => _status = v);
+                  },
+                  onQuickSelect: (s) => setState(() => _status = s),
+                  onSave: _saveStatus,
+                ),
+              ],
             ),
           ],
         ),
@@ -652,90 +291,240 @@ class _SuppOrderModelState extends State<SuppOrderModel> {
   }
 }
 
-// ── Shared widgets ────────────────────────────────────────────────────────────
+// ── Section sub-widgets ───────────────────────────────────────────────────────
 
-class _SoftChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _SoftChip({required this.icon, required this.label});
+class _SupplierOrderImage extends StatelessWidget {
+  final String url;
+  const _SupplierOrderImage({required this.url});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(999),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: 64,
+        height: 64,
+        color: const Color(0xFFF1F3F7),
+        child: url.isEmpty
+            ? const Icon(Icons.image_outlined, color: Colors.grey)
+            : Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.broken_image_outlined, color: Colors.grey),
+              ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: const Color(0xFF4B5563)),
-          const SizedBox(width: 5),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 140),
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF374151),
+    );
+  }
+}
+
+class _OrderInfoSection extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final String orderId;
+  final String name;
+  final double price;
+  final int safeQty;
+  final DateTime? estDelivery;
+
+  const _OrderInfoSection({
+    required this.data,
+    required this.orderId,
+    required this.name,
+    required this.price,
+    required this.safeQty,
+    required this.estDelivery,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final paymentStatus = readStr(
+      _firstOf(data, ['paymentStatus', 'paymentstatus']),
+      'Not available',
+    );
+    final orderDate = formatDate(
+      readDate(_firstOf(data, ['orderDate', 'createdAt', 'date', 'orderdate'])),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const OrderSectionHeader(icon: Icons.receipt_long_rounded, title: 'Order Information'),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            InfoBox(title: 'Order ID', value: orderId),
+            InfoBox(title: 'Product', value: name),
+            InfoBox(title: 'Unit Price', value: '\$${price.toStringAsFixed(2)}'),
+            InfoBox(title: 'Quantity', value: safeQty.toString()),
+            InfoBox(title: 'Total', value: '\$${(price * safeQty).toStringAsFixed(2)}'),
+            InfoBox(title: 'Payment', value: paymentStatus),
+            InfoBox(title: 'Order Date', value: orderDate),
+            if (estDelivery != null)
+              InfoBox(title: 'Est. Delivery', value: formatDate(estDelivery)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CustomerInfoSection extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const _CustomerInfoSection({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const OrderSectionHeader(icon: Icons.person_rounded, title: 'Customer Information'),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            InfoBox(
+              title: 'Customer',
+              value: readStr(_firstOf(data, ['custname', 'customerName', 'buyerName']), 'Unknown'),
+            ),
+            InfoBox(
+              title: 'Customer ID',
+              value: readStr(_firstOf(data, ['cid', 'customerId']), 'N/A'),
+            ),
+            InfoBox(
+              title: 'Email',
+              value: readStr(_firstOf(data, ['email', 'customerEmail']), 'Not available'),
+            ),
+            InfoBox(
+              title: 'Phone',
+              value: readStr(_firstOf(data, ['phone', 'customerPhone']), 'Not available'),
+            ),
+            InfoBox(
+              title: 'Address',
+              value: readStr(
+                _firstOf(data, ['address', 'customerAddress', 'shippingAddress']),
+                'Not available',
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  final String label;
-  final Color color;
-  final IconData icon;
-  const _StatusChip({required this.label, required this.color, required this.icon});
+class _DeliveryDateSection extends StatelessWidget {
+  final DateTime? estDelivery;
+  final bool saving;
+  final VoidCallback onPickDate;
+  final void Function(int days) onQuickDate;
+  final VoidCallback onSave;
+
+  const _DeliveryDateSection({
+    required this.estDelivery,
+    required this.saving,
+    required this.onPickDate,
+    required this.onQuickDate,
+    required this.onSave,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: color),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  const _SectionHeader({required this.icon, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 19, color: const Color(0xFF111827)),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF111827),
+        const OrderSectionHeader(icon: Icons.calendar_month_rounded, title: 'Estimated Delivery'),
+        const SizedBox(height: 14),
+        InkWell(
+          onTap: saving ? null : onPickDate,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: estDelivery != null ? const Color(0xFF111827) : const Color(0xFFE5E7EB),
+                width: estDelivery != null ? 1.4 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF111827),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        estDelivery == null ? 'Tap to select date & time' : formatDate(estDelivery),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: estDelivery == null
+                              ? const Color(0xFF9CA3AF)
+                              : const Color(0xFF111827),
+                        ),
+                      ),
+                      if (estDelivery != null)
+                        const Text(
+                          'Tap to change',
+                          style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                        ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: estDelivery != null ? const Color(0xFF111827) : const Color(0xFF9CA3AF),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final entry in {'+1 day': 1, '+3 days': 3, '+1 week': 7, '+2 weeks': 14}.entries)
+              _QuickDateChip(label: entry.key, onTap: () => onQuickDate(entry.value)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: saving || estDelivery == null ? null : onSave,
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: const Color(0xFF111827),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: const Color(0xFFE5E7EB),
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            icon: saving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.event_available_rounded),
+            label: Text(
+              saving ? 'Saving...' : 'Save Delivery Date',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
           ),
         ),
       ],
@@ -743,50 +532,103 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _InfoBox extends StatelessWidget {
-  final String title;
-  final String value;
-  const _InfoBox({required this.title, required this.value});
+class _StatusUpdateSection extends StatelessWidget {
+  final String selectedStatus;
+  final bool updating;
+  final Color statusColor;
+  final ValueChanged<String?> onChanged;
+  final ValueChanged<String> onQuickSelect;
+  final VoidCallback onSave;
+
+  const _StatusUpdateSection({
+    required this.selectedStatus,
+    required this.updating,
+    required this.statusColor,
+    required this.onChanged,
+    required this.onQuickSelect,
+    required this.onSave,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 145, maxWidth: 240),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF6B7280),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const OrderSectionHeader(
+          icon: Icons.local_shipping_rounded,
+          title: 'Update Delivery Status',
+        ),
+        const SizedBox(height: 14),
+        DropdownButtonFormField<String>(
+          value: selectedStatus,
+          items: _statusOptions
+              .map((s) => DropdownMenuItem(value: s, child: Text(capitalize(s))))
+              .toList(),
+          onChanged: updating ? null : onChanged,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide(color: statusColor, width: 1.4),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 4,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF111827),
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _statusOptions
+              .map(
+                (s) => _QuickStatusButton(
+                  label: capitalize(s),
+                  selected: selectedStatus == s,
+                  color: orderStatusColor(s),
+                  onTap: () => onQuickSelect(s),
+                ),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: updating ? null : onSave,
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: const Color(0xFF111827),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            icon: updating
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.save_rounded),
+            label: Text(
+              updating ? 'Updating...' : 'Save Status',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
+
+// ── Small chips ───────────────────────────────────────────────────────────────
 
 class _QuickStatusButton extends StatelessWidget {
   final String label;
@@ -854,49 +696,6 @@ class _QuickDateChip extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF374151),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class EmptyOrdersView extends StatelessWidget {
-  const EmptyOrdersView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(24),
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(26),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.inventory_2_outlined, size: 82, color: Color(0xFF9CA3AF)),
-            SizedBox(height: 14),
-            Text(
-              'No orders here yet',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800, color: Color(0xFF374151)),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Orders will appear here once placed.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
             ),
           ],
         ),

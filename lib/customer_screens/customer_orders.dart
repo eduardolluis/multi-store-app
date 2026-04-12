@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/models/order_model.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
+import 'package:multi_store_app/widgets/order_widget.dart';
 
 class CustomerOrders extends StatelessWidget {
   const CustomerOrders({super.key});
