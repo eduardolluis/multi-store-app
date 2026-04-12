@@ -12,6 +12,8 @@ class WishListModel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasDiscount = product.salePrice < product.price;
+
     return Padding(
       padding: const EdgeInsets.all(5.0),
       child: Card(
@@ -40,21 +42,33 @@ class WishListModel extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            product.price.toStringAsFixed(2),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red[700],
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (hasDiscount)
+                                Text(
+                                  product.price.toStringAsFixed(2),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[400],
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                              Text(
+                                product.salePrice.toStringAsFixed(2),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red[700],
+                                ),
+                              ),
+                            ],
                           ),
                           Row(
                             children: [
                               IconButton(
-                                onPressed: () {
-                                  context.read<Wish>().removeItem(product);
-                                },
-                                icon: Icon(Icons.delete_forever),
+                                onPressed: () => context.read<Wish>().removeItem(product),
+                                icon: const Icon(Icons.delete_forever),
                               ),
                               const SizedBox(width: 10),
                               context.watch<Cart>().getItems.firstWhereOrNull(
@@ -68,6 +82,7 @@ class WishListModel extends StatelessWidget {
                                         context.read<Cart>().addItem(
                                           product.name,
                                           product.price,
+                                          product.salePrice,
                                           1,
                                           product.quantity,
                                           product.imagesUrl,
@@ -75,7 +90,7 @@ class WishListModel extends StatelessWidget {
                                           product.supplierId,
                                         );
                                       },
-                                      icon: Icon(Icons.add_shopping_cart),
+                                      icon: const Icon(Icons.add_shopping_cart),
                                     ),
                             ],
                           ),

@@ -15,6 +15,8 @@ class CartModel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasDiscount = product.salePrice < product.price;
+
     return Padding(
       padding: const EdgeInsets.all(5.0),
       child: Card(
@@ -23,11 +25,7 @@ class CartModel extends StatelessWidget {
           height: 100,
           child: Row(
             children: [
-              SizedBox(
-                height: 100,
-                width: 120,
-                child: Image.network(product.imagesUrl[0]),
-              ),
+              SizedBox(height: 100, width: 120, child: Image.network(product.imagesUrl[0])),
               Flexible(
                 child: Padding(
                   padding: const EdgeInsets.all(6),
@@ -47,13 +45,27 @@ class CartModel extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            product.price.toStringAsFixed(2),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red[700],
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (hasDiscount)
+                                Text(
+                                  product.price.toStringAsFixed(2),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[400],
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                              Text(
+                                product.salePrice.toStringAsFixed(2),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red[700],
+                                ),
+                              ),
+                            ],
                           ),
                           Container(
                             height: 35,
@@ -69,137 +81,77 @@ class CartModel extends StatelessWidget {
                                           showCupertinoModalPopup(
                                             context: context,
                                             builder: (BuildContext context) => CupertinoActionSheet(
-                                              title: Text('Remove Item'),
-                                              message: Text(
+                                              title: const Text('Remove Item'),
+                                              message: const Text(
                                                 'Are you sure you want to remove this item?',
                                               ),
                                               actions: <CupertinoActionSheetAction>[
                                                 CupertinoActionSheetAction(
-                                                  child: Text(
-                                                    'Move to wishlist',
-                                                  ),
+                                                  child: const Text('Move to wishlist'),
                                                   onPressed: () async {
                                                     final alreadyInWish = context
                                                         .read<Wish>()
                                                         .getWishItems
                                                         .firstWhereOrNull(
                                                           (element) =>
-                                                              element
-                                                                  .documentId ==
-                                                              product
-                                                                  .documentId,
+                                                              element.documentId ==
+                                                              product.documentId,
                                                         );
-
                                                     if (alreadyInWish == null) {
-                                                      await context
-                                                          .read<Wish>()
-                                                          .addWishItem(
-                                                            product.name,
-                                                            product.price,
-                                                            1,
-                                                            product.quantity,
-                                                            product.imagesUrl,
-                                                            product.documentId,
-                                                            product.supplierId,
-                                                          );
+                                                      await context.read<Wish>().addWishItem(
+                                                        product.name,
+                                                        product.price,
+                                                        product.salePrice,
+                                                        1,
+                                                        product.quantity,
+                                                        product.imagesUrl,
+                                                        product.documentId,
+                                                        product.supplierId,
+                                                      );
                                                     }
-
-                                                    context
-                                                        .read<Cart>()
-                                                        .removeItem(product);
+                                                    context.read<Cart>().removeItem(product);
                                                     Navigator.pop(context);
                                                   },
                                                 ),
                                                 CupertinoActionSheetAction(
-                                                  child: Text('Delete item'),
+                                                  child: const Text('Delete item'),
                                                   onPressed: () async {
-                                                    context
-                                                                .read<Wish>()
-                                                                .getWishItems
-                                                                .firstWhereOrNull(
-                                                                  (element) =>
-                                                                      element
-                                                                          .documentId ==
-                                                                      product
-                                                                          .documentId,
-                                                                ) !=
-                                                            null
-                                                        ? context
-                                                              .read<Cart>()
-                                                              .removeItem(
-                                                                product,
-                                                              )
-                                                        : await context
-                                                              .read<Wish>()
-                                                              .addWishItem(
-                                                                product.name,
-                                                                product.price,
-                                                                1,
-                                                                product
-                                                                    .quantity,
-                                                                product
-                                                                    .imagesUrl,
-                                                                product
-                                                                    .documentId,
-                                                                product
-                                                                    .supplierId,
-                                                              );
-                                                    context
-                                                        .read<Cart>()
-                                                        .removeItem(product);
+                                                    context.read<Cart>().removeItem(product);
                                                     Navigator.pop(context);
                                                   },
                                                 ),
                                               ],
                                               cancelButton: TextButton(
-                                                onPressed: () {
-                                                  Navigator.pop(context);
-                                                },
-                                                child: Text(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text(
                                                   'Cancel',
-                                                  style: TextStyle(
-                                                    fontSize: 20,
-                                                    color: Colors.red,
-                                                  ),
+                                                  style: TextStyle(fontSize: 20, color: Colors.red),
                                                 ),
                                               ),
                                             ),
                                           );
                                         },
-                                        icon: Icon(
-                                          Icons.delete_forever,
-                                          size: 18,
-                                        ),
+                                        icon: const Icon(Icons.delete_forever, size: 18),
                                       )
                                     : IconButton(
-                                        onPressed: () {
-                                          cart.reduceByOne(product);
-                                        },
-                                        icon: Icon(
-                                          FontAwesomeIcons.minus,
-                                          size: 18,
-                                        ),
+                                        onPressed: () => cart.reduceByOne(product),
+                                        icon: const Icon(FontAwesomeIcons.minus, size: 18),
                                       ),
                                 Text(
                                   product.qty.toString(),
                                   style: product.qty == product.quantity
-                                      ? TextStyle(
+                                      ? const TextStyle(
                                           color: Colors.red,
                                           fontSize: 20,
                                           fontFamily: 'Acme',
                                         )
-                                      : TextStyle(
-                                          fontSize: 20,
-                                          fontFamily: 'Acme',
-                                        ),
+                                      : const TextStyle(fontSize: 20, fontFamily: 'Acme'),
                                 ),
                                 IconButton(
                                   onPressed: product.qty == product.quantity
                                       ? null
-                                      : () {
-                                          cart.increment(product);
-                                        },
-                                  icon: Icon(FontAwesomeIcons.plus, size: 18),
+                                      : () => cart.increment(product),
+                                  icon: const Icon(FontAwesomeIcons.plus, size: 18),
                                 ),
                               ],
                             ),

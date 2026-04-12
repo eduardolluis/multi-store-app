@@ -36,9 +36,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final price = (widget.productList['price'] as num?)?.toDouble() ?? 0.0;
+    final discount = (widget.productList['discount'] as num?)?.toInt() ?? 0;
+    final salePrice = computeSalePrice(widget.productList);
+    final hasDiscount = discount > 0 && discount <= 100;
+
     var existingItemCart = context.read<Cart>().getItems.firstWhereOrNull(
       (product) => product.documentId == widget.productList['productId'],
     );
+
     return Material(
       child: SafeArea(
         child: ScaffoldMessenger(
@@ -74,10 +80,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: CircleAvatar(
                             backgroundColor: Colors.yellow,
                             child: IconButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              icon: Icon(Icons.arrow_back_ios_new),
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.arrow_back_ios_new),
                             ),
                           ),
                         ),
@@ -86,9 +90,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           top: 20,
                           child: CircleAvatar(
                             backgroundColor: Colors.yellow,
-                            child: IconButton(onPressed: () {}, icon: Icon(Icons.share)),
+                            child: IconButton(onPressed: () {}, icon: const Icon(Icons.share)),
                           ),
                         ),
+                        if (hasDiscount)
+                          Positioned(
+                            top: 20,
+                            left: 70,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '-$discount%',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -108,27 +132,52 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  "USD ",
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.red,
+                                if (hasDiscount)
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'USD ',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[400],
+                                          decoration: TextDecoration.lineThrough,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${price.toStringAsFixed(2)}\$',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey[400],
+                                          decoration: TextDecoration.lineThrough,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                Text(
-                                  widget.productList['price'].toStringAsFixed(2) + ('\$'),
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.red,
-                                  ),
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'USD ',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${salePrice.toStringAsFixed(2)}\$',
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-
                             IconButton(
                               onPressed: () {
                                 var existingItemWishlist = context
@@ -144,7 +193,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       )
                                     : context.read<Wish>().addWishItem(
                                         widget.productList['productName'],
-                                        widget.productList['price'],
+                                        price,
+                                        salePrice,
                                         1,
                                         widget.productList['quantity'],
                                         widget.productList['images'],
@@ -163,15 +213,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                           ],
                         ),
-
                         widget.productList['quantity'] == 0
                             ? const Text(
-                                "This Item is out of Stock",
+                                'This Item is out of Stock',
                                 style: TextStyle(color: Colors.blueGrey, fontSize: 16),
                               )
                             : Text(
-                                "${widget.productList['quantity']} Pieces available in stock",
-                                style: TextStyle(color: Colors.blueGrey, fontSize: 16),
+                                '${widget.productList['quantity']} Pieces available in stock',
+                                style: const TextStyle(color: Colors.blueGrey, fontSize: 16),
                               ),
                         ProductDetailsLabel(label: '  Item Description  '),
                         Text(
@@ -186,39 +235,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ],
                     ),
                   ),
-
                   ProductDetailsLabel(label: ' Similar Items '),
                   SizedBox(
                     child: StreamBuilder<QuerySnapshot>(
                       stream: productsStream,
                       builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
                         if (snapshot.hasError) {
-                          return Text('Something went wrong');
+                          return const Text('Something went wrong');
                         }
-
                         if (snapshot.connectionState == ConnectionState.waiting) {
                           return const Center(child: CircularProgressIndicator());
                         }
                         if (snapshot.data!.docs.isEmpty) {
-                          return Center(
+                          return const Center(
                             child: Text(
-                              "This category \n \n  has no items yet!",
+                              'This category \n \n  has no items yet!',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 26,
                                 color: Colors.blueGrey,
                                 fontWeight: FontWeight.bold,
-                                fontFamily: "Acme",
+                                fontFamily: 'Acme',
                                 letterSpacing: 1.5,
                               ),
                             ),
                           );
                         }
-
                         return SingleChildScrollView(
                           child: StaggeredGridView.countBuilder(
                             shrinkWrap: true,
-                            physics: NeverScrollableScrollPhysics(),
+                            physics: const NeverScrollableScrollPhysics(),
                             crossAxisCount: 2,
                             itemCount: snapshot.data!.docs.length,
                             itemBuilder: (context, index) {
@@ -266,11 +312,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           padding: const EdgeInsets.all(2),
                           child: badge.Badge(
                             showBadge: context.read<Cart>().getItems.isEmpty ? false : true,
-                            badgeStyle: badge.BadgeStyle(badgeColor: Colors.yellow),
-
+                            badgeStyle: const badge.BadgeStyle(badgeColor: Colors.yellow),
                             badgeContent: Text(
-                              context.watch<Cart>().getItems.toString(),
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              context.watch<Cart>().getItems.length.toString(),
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                             ),
                             child: const Icon(Icons.shopping_cart),
                           ),
@@ -282,13 +327,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     label: existingItemCart != null ? 'Added to cart' : 'ADD TO CART',
                     onPressed: () {
                       if (widget.productList['quantity'] == 0) {
-                        MyMessageHandler.showSnackBar(scaffoldKey, "This Item is out of Stock");
+                        MyMessageHandler.showSnackBar(scaffoldKey, 'This Item is out of Stock');
                       } else if (existingItemCart != null) {
                         MyMessageHandler.showSnackBar(scaffoldKey, 'This item already in cart');
                       } else {
                         context.read<Cart>().addItem(
                           widget.productList['productName'],
-                          widget.productList['price'],
+                          price,
+                          salePrice,
                           1,
                           widget.productList['quantity'],
                           widget.productList['images'],
