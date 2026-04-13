@@ -1,12 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import "package:flutter_stripe/flutter_stripe.dart";
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -63,71 +64,191 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     super.dispose();
   }
 
-  Future<void> _confirmPayment(
+  // ─── Crea las órdenes en Firestore después del pago exitoso ──────────────────
+  Future<void> _createOrders(
+    Map<String, dynamic> customerData,
+    Cart cart,
+    String paymentMethod, {
+    String? paymentIntentId,
+  }) async {
+    for (final item in cart.getItems) {
+      final orderId = const Uuid().v4();
+      await FirebaseFirestore.instance.collection('orders').doc(orderId).set({
+        'cid': customerData['cid'],
+        'custname': customerData['name'],
+        'email': customerData['email'],
+        'phone': customerData['phone'],
+        'address': customerData['address'],
+        'profileImage': customerData['profileImage'] ?? '',
+        'sid': item.supplierId,
+        'proid': item.documentId,
+        'orderId': orderId,
+        'ordername': item.name,
+        'orderImage': item.imagesUrl[0],
+        'orderqty': item.qty,
+        'orderprice': item.qty * item.price,
+        'deliverystatus': 'preparing',
+        'deliverydate': '',
+        'orderdate': DateTime.now(),
+        'paymentstatus': paymentMethod,
+        if (paymentIntentId != null) 'paymentIntentId': paymentIntentId,
+        'orderreview': false,
+      });
+
+      // Actualizar stock
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final ref = FirebaseFirestore.instance.collection('products').doc(item.documentId);
+        final snap = await transaction.get(ref);
+        final currentQty = (snap['quantity'] as num).toInt();
+        transaction.update(ref, {'quantity': currentQty - item.qty});
+      });
+    }
+  }
+
+  // ─── Éxito: animar y navegar ──────────────────────────────────────────────────
+  Future<void> _onPaymentSuccess(Cart cart) async {
+    cart.clearCart();
+    if (!mounted) return;
+
+    setState(() {
+      _processing = false;
+      _showSuccess = true;
+    });
+
+    _successController.forward();
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+    Navigator.popUntil(context, ModalRoute.withName('/customer_home'));
+  }
+
+  void _showError(String msg) {
+    if (!mounted) return;
+    setState(() => _processing = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+
+  // ─── PAGO EN EFECTIVO ─────────────────────────────────────────────────────────
+  Future<void> _payCash(Map<String, dynamic> customerData, Cart cart) async {
+    await _createOrders(customerData, cart, 'cash on delivery');
+    await _onPaymentSuccess(cart);
+  }
+
+  // ─── PAGO CON TARJETA (Stripe Payment Sheet) ──────────────────────────────────
+  Future<void> _payWithCard(Map<String, dynamic> customerData, Cart cart, double totalPaid) async {
+    try {
+      // 1. Llamar al Cloud Function para crear el PaymentIntent
+      final callable = FirebaseFunctions.instance.httpsCallable('createPaymentIntent');
+      final result = await callable.call({'amount': totalPaid});
+
+      final clientSecret = result.data['clientSecret'] as String;
+      final paymentIntentId = result.data['paymentIntentId'] as String;
+
+      // 2. Inicializar el Payment Sheet de Stripe
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: 'Duck Store',
+          style: ThemeMode.system,
+          appearance: const PaymentSheetAppearance(
+            colors: PaymentSheetAppearanceColors(primary: Color(0xFF111827)),
+            shapes: PaymentSheetShape(borderRadius: 16, borderWidth: 1),
+          ),
+        ),
+      );
+
+      // 3. Mostrar el Payment Sheet
+      await Stripe.instance.presentPaymentSheet();
+
+      // 4. Si llegamos aquí, el pago fue exitoso → crear órdenes
+      await _createOrders(customerData, cart, 'card', paymentIntentId: paymentIntentId);
+      await _onPaymentSuccess(cart);
+    } on StripeException catch (e) {
+      if (e.error.code == FailureCode.Canceled) {
+        // El usuario canceló — no mostrar error
+        setState(() => _processing = false);
+      } else {
+        _showError('Pago fallido: ${e.error.localizedMessage ?? e.error.message}');
+      }
+    } on FirebaseFunctionsException catch (e) {
+      _showError('Error al iniciar el pago: ${e.message}');
+    } catch (e) {
+      _showError('Error inesperado. Intenta de nuevo.');
+    }
+  }
+
+  // ─── PAGO CON PAYPAL (simulado — integrar con SDK propio) ────────────────────
+  // Para PayPal real necesitarías: https://pub.dev/packages/flutter_paypal_payment
+  Future<void> _payWithPayPal(
+    Map<String, dynamic> customerData,
+    Cart cart,
+    double totalPaid,
+  ) async {
+    // Placeholder: mostrar diálogo informativo
+    // Reemplazar con la integración real de PayPal cuando esté lista
+    if (!mounted) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('PayPal', style: TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          'Monto a cobrar: \$${totalPaid.toStringAsFixed(2)}\n\n'
+          'PayPal requiere integración adicional. '
+          '¿Confirmar como simulación?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar', style: TextStyle(color: Color(0xFF6B7280))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF003087),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _createOrders(customerData, cart, 'paypal');
+      await _onPaymentSuccess(cart);
+    } else {
+      setState(() => _processing = false);
+    }
+  }
+
+  // ─── DISPATCHER PRINCIPAL ────────────────────────────────────────────────────
+  Future<void> _handlePayment(
     Map<String, dynamic> customerData,
     Cart cart,
     double totalPaid,
   ) async {
     setState(() => _processing = true);
 
-    try {
-      for (final item in cart.getItems) {
-        final orderId = const Uuid().v4();
-        await FirebaseFirestore.instance.collection('orders').doc(orderId).set({
-          'cid': customerData['cid'],
-          'custname': customerData['name'],
-          'email': customerData['email'],
-          'phone': customerData['phone'],
-          'address': customerData['address'],
-          'profileImage': customerData['profileImage'] ?? '',
-          'sid': item.supplierId,
-          'proid': item.documentId,
-          'orderId': orderId,
-          'ordername': item.name,
-          'orderImage': item.imagesUrl[0],
-          'orderqty': item.qty,
-          'orderprice': item.qty * item.price,
-          'deliverystatus': 'preparing',
-          'deliverydate': '',
-          'orderdate': DateTime.now(),
-          'paymentstatus': _selectedValue == 1
-              ? 'cash on delivery'
-              : _selectedValue == 2
-              ? 'card'
-              : 'paypal',
-          'orderreview': false,
-        });
-
-        // Update stock
-        await FirebaseFirestore.instance.runTransaction((transaction) async {
-          final ref = FirebaseFirestore.instance.collection('products').doc(item.documentId);
-          final snap = await transaction.get(ref);
-          final currentQty = (snap['quantity'] as num).toInt();
-          transaction.update(ref, {'quantity': currentQty - item.qty});
-        });
-      }
-
-      cart.clearCart();
-
-      setState(() {
-        _processing = false;
-        _showSuccess = true;
-      });
-
-      _successController.forward();
-
-      await Future.delayed(const Duration(seconds: 2));
-
-      if (!mounted) return;
-      Navigator.popUntil(context, ModalRoute.withName('/customer_home'));
-    } catch (_) {
-      setState(() => _processing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Payment failed. Please try again.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    switch (_selectedValue) {
+      case 1:
+        await _payCash(customerData, cart);
+        break;
+      case 2:
+        await _payWithCard(customerData, cart, totalPaid);
+        break;
+      case 3:
+        await _payWithPayPal(customerData, cart, totalPaid);
+        break;
     }
   }
 
@@ -137,7 +258,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     final totalPrice = cart.totalPrice;
     final totalPaid = totalPrice + 10.0;
 
-    // ── Success overlay ──
+    // ── Pantalla de éxito ──
     if (_showSuccess) {
       return Scaffold(
         backgroundColor: const Color(0xFFF5F7FB),
@@ -213,7 +334,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Order Summary ──
+                  // ── Resumen de orden ──
                   _SectionLabel(label: 'Order Summary'),
                   const SizedBox(height: 10),
                   Container(
@@ -285,7 +406,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
 
                   const SizedBox(height: 22),
 
-                  // ── Delivery Address ──
+                  // ── Dirección de entrega ──
                   _SectionLabel(label: 'Delivering To'),
                   const SizedBox(height: 10),
                   Container(
@@ -340,7 +461,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
                               ),
                               if ((data['phone'] ?? '').toString().isNotEmpty)
                                 Text(
-                                  (data['phone']).toString(),
+                                  data['phone'].toString(),
                                   style: const TextStyle(
                                     fontSize: 13,
                                     color: Color(0xFF6B7280),
@@ -356,7 +477,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
 
                   const SizedBox(height: 22),
 
-                  // ── Payment Method ──
+                  // ── Métodos de pago ──
                   _SectionLabel(label: 'Payment Method'),
                   const SizedBox(height: 10),
 
@@ -405,12 +526,16 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
                       size: 26,
                     ),
                   ),
+
+                  // ── Nota según método seleccionado ──
+                  const SizedBox(height: 16),
+                  _PaymentMethodNote(selectedValue: _selectedValue),
                 ],
               ),
             ),
           ),
 
-          // ── Bottom confirm button ──
+          // ── Botón confirmar ──
           bottomSheet: Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -428,7 +553,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
               child: ElevatedButton(
                 onPressed: _processing
                     ? null
-                    : () => _confirmPayment(data, context.read<Cart>(), totalPaid),
+                    : () => _handlePayment(data, context.read<Cart>(), totalPaid),
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
                   backgroundColor: const Color(0xFF111827),
@@ -443,9 +568,13 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
                         child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                       )
                     : Text(
-                        'Confirm & Pay  \$${totalPaid.toStringAsFixed(2)}',
+                        _selectedValue == 1
+                            ? 'Place Order — Cash on Delivery'
+                            : _selectedValue == 2
+                            ? 'Pay \$${totalPaid.toStringAsFixed(2)} with Card'
+                            : 'Pay \$${totalPaid.toStringAsFixed(2)} with PayPal',
                         style: const TextStyle(
-                          fontSize: 17,
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.3,
                         ),
@@ -455,6 +584,57 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
           ),
         );
       },
+    );
+  }
+}
+
+// ── Nota informativa por método ───────────────────────────────────────────────
+
+class _PaymentMethodNote extends StatelessWidget {
+  final int selectedValue;
+  const _PaymentMethodNote({required this.selectedValue});
+
+  @override
+  Widget build(BuildContext context) {
+    final notes = {
+      1: (
+        Icons.info_outline_rounded,
+        const Color(0xFF10B981),
+        const Color(0xFFD1FAE5),
+        'Tu orden se procesará de inmediato. El pago se realiza cuando recibas tu pedido.',
+      ),
+      2: (
+        Icons.lock_rounded,
+        const Color(0xFF3B82F6),
+        const Color(0xFFDBEAFE),
+        'Tu pago es 100% seguro. Stripe encripta todos los datos de tu tarjeta.',
+      ),
+      3: (
+        FontAwesomeIcons.shieldHalved,
+        const Color(0xFF003087),
+        const Color(0xFFDBEAFE),
+        'Serás redirigido a PayPal para completar el pago de forma segura.',
+      ),
+    };
+
+    final note = notes[selectedValue];
+    if (note == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: note.$3, borderRadius: BorderRadius.circular(16)),
+      child: Row(
+        children: [
+          Icon(note.$1, color: note.$2, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              note.$4,
+              style: TextStyle(fontSize: 13, color: note.$2, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -602,3 +782,4 @@ class _SummaryRow extends StatelessWidget {
     );
   }
 }
+  
