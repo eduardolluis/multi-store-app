@@ -61,7 +61,6 @@ class _BalanceState extends State<Balance> with TickerProviderStateMixin {
         final data = doc.data();
         final price = (data['orderprice'] as num?)?.toDouble() ?? 0;
         final status = (data['deliverystatus'] ?? '').toString().toLowerCase();
-        final payStatus = (data['paymentstatus'] ?? '').toString().toLowerCase();
 
         total += price;
 
@@ -373,7 +372,7 @@ class _RecentTransactions extends StatelessWidget {
                             : Image.network(
                                 image,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
+                                errorBuilder: (_, _, _) =>
                                     const Icon(Icons.broken_image_outlined, color: Colors.white24),
                               ),
                       ),
@@ -402,7 +401,7 @@ class _RecentTransactions extends StatelessWidget {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         );
       },
