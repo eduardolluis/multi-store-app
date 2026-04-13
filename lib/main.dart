@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:multi_store_app/auth/customer_login.dart';
 import 'package:multi_store_app/auth/customer_signup.dart';
 import 'package:multi_store_app/auth/supplier_login.dart';
@@ -9,13 +10,18 @@ import 'package:multi_store_app/main_screens/supplier_home.dart';
 import 'package:multi_store_app/main_screens/welcome.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
+import 'package:multi_store_app/providers/stripe_id.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  Stripe.publishableKey = STRIPE_PUBLISHABLE_KEY;
+  Stripe.merchantIdentifier = 'merchant.flutter.stripe.test';
+  Stripe.urlScheme = 'flutterstripe';
+  await Stripe.instance.applySettings();
+  
   await dotenv.load(fileName: ".env");
 
   await Firebase.initializeApp();

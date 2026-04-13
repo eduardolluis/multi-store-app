@@ -6,6 +6,7 @@ import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import "package:flutter_stripe/flutter_stripe.dart";
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
