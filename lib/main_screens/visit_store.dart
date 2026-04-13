@@ -7,6 +7,8 @@ import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_grid_view.dart';
 import 'package:staggered_grid_view_flutter/widgets/staggered_tile.dart';
 
+import '../minor_screens/edit_store.dart';
+
 class VisitStore extends StatefulWidget {
   final String supplierId;
   const VisitStore({super.key, required this.supplierId});
@@ -101,7 +103,7 @@ class _VisitStoreState extends State<VisitStore> {
                                 ),
                               ],
                             ),
-                            data['cid'] ==
+                            data['sid'] ==
                                     FirebaseAuth.instance.currentUser!.uid
                                 ? Container(
                                     height: 35,
@@ -116,7 +118,9 @@ class _VisitStoreState extends State<VisitStore> {
                                       borderRadius: BorderRadius.circular(25),
                                     ),
                                     child: MaterialButton(
-                                      onPressed: () {},
+                                      onPressed: () {
+                                        Navigator.push(context, MaterialPageRoute(builder: (context) => EditStore()));
+                                      },
                                       child: Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceAround,

@@ -1,2 +1,2 @@
-const String  STRIPE_PUBLISHABLE_KEY =
+const String STRIPE_PUBLISHABLE_KEY =
     'pk_test_51TLWUHPqZ4LxPN4CUv9fzsgjUfqLuljya8wdBYxsTsML2j6YTApaaum7siLz9i5mtrr6HCAcfG6sr60lH0hb34Ir004YXLH0m5';
