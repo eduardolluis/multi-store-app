@@ -1,3 +1,4 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
@@ -21,10 +22,12 @@ void main() async {
   Stripe.merchantIdentifier = 'merchant.flutter.stripe.test';
   Stripe.urlScheme = 'flutterstripe';
   await Stripe.instance.applySettings();
-  
+
   await dotenv.load(fileName: ".env");
 
   await Firebase.initializeApp();
+
+  await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug);
 
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,

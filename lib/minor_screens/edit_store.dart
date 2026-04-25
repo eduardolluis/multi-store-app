@@ -16,6 +16,7 @@ class EditStore extends StatefulWidget {
 class _EditStoreState extends State<EditStore> {
   final ImagePicker _picker = ImagePicker();
   XFile? _imageFileLogo;
+  XFile? _imageFileCover;
   dynamic _pickedImageError;
 
   void pickStoreLogo() async {
@@ -37,6 +38,25 @@ class _EditStoreState extends State<EditStore> {
     }
   }
 
+  void pickCoverImage() async {
+    try {
+      final pickedCoverImage = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxHeight: 300,
+        maxWidth: 300,
+        imageQuality: 95,
+      );
+      setState(() {
+        _imageFileCover = pickedCoverImage;
+      });
+    } catch (e) {
+      setState(() {
+        _pickedImageError = e;
+      });
+      print(_pickedImageError);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,49 +68,161 @@ class _EditStoreState extends State<EditStore> {
         title: AppbarTitle(title: 'Edit Store'),
       ),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Text(
-            "Store Logo",
-            style: TextStyle(fontSize: 24, color: Colors.blueGrey, fontWeight: FontWeight.w600),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          Column(
             children: [
-              CircleAvatar(radius: 60, backgroundImage: NetworkImage(widget.data['storeLogo'])),
-              YellowButton(
-                label: 'Change',
-                onPressed: () {
-                  pickStoreLogo();
-                },
-                width: 0.25,
+              Text(
+                "Store Logo",
+                style: TextStyle(fontSize: 24, color: Colors.blueGrey, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 10),
-              _imageFileLogo == null
-                  ? const SizedBox()
-                  : YellowButton(
-                      label: 'Reset',
-                      onPressed: () {
-                        setState(() {
-                          _imageFileLogo = null;
-                        });
-                      },
-                      width: 0.25,
-                    ),
-              _imageFileLogo == null
-                  ? const SizedBox()
-                  : CircleAvatar(
-                      radius: 60,
-                      backgroundImage: FileImage(File(_imageFileLogo!.path)),
-                    ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  CircleAvatar(radius: 60, backgroundImage: NetworkImage(widget.data['storeLogo'])),
+                  Column(
+                    children: [
+                      YellowButton(
+                        label: 'Change',
+                        onPressed: () {
+                          pickStoreLogo();
+                        },
+                        width: 0.25,
+                      ),
+                      const SizedBox(height: 10),
+                      _imageFileLogo == null
+                          ? const SizedBox()
+                          : YellowButton(
+                              label: 'Reset',
+                              onPressed: () {
+                                setState(() {
+                                  _imageFileLogo = null;
+                                });
+                              },
+                              width: 0.25,
+                            ),
+                    ],
+                  ),
+                  _imageFileLogo == null
+                      ? const SizedBox()
+                      : CircleAvatar(
+                          radius: 60,
+                          backgroundImage: FileImage(File(_imageFileLogo!.path)),
+                        ),
+                ],
+              ),
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Divider(color: Colors.yellow, thickness: 2.5),
+              ),
+            ],
+          ),
+          Column(
+            children: [
+              Text(
+                "Cover Image",
+                style: TextStyle(fontSize: 24, color: Colors.blueGrey, fontWeight: FontWeight.w600),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundImage: NetworkImage(widget.data['coverImage']),
+                  ),
+                  Column(
+                    children: [
+                      YellowButton(
+                        label: 'Change',
+                        onPressed: () {
+                          pickCoverImage();
+                        },
+                        width: 0.25,
+                      ),
+                      const SizedBox(height: 10),
+                      _imageFileCover == null
+                          ? const SizedBox()
+                          : YellowButton(
+                              label: 'Reset',
+                              onPressed: () {
+                                setState(() {
+                                  _imageFileCover = null;
+                                });
+                              },
+                              width: 0.25,
+                            ),
+                    ],
+                  ),
+                  _imageFileCover == null
+                      ? const SizedBox()
+                      : CircleAvatar(
+                          radius: 60,
+                          backgroundImage: FileImage(File(_imageFileCover!.path)),
+                        ),
+                ],
+              ),
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Divider(color: Colors.yellow, thickness: 2.5),
+              ),
             ],
           ),
           Padding(
-            padding: EdgeInsets.all(16),
-            child: Divider(color: Colors.yellow, thickness: 2.5),
+            padding: const EdgeInsets.all(8.0),
+            child: TextFormField(
+              initialValue: widget.data['storeName'],
+              decoration: textFormDecor.copyWith(
+                label: Text('Store Name'),
+                hintText: 'Enter store name',
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextFormField(
+              initialValue: widget.data['phone'],
+              decoration: textFormDecor.copyWith(
+                label: Text('Phone'),
+                hintText: 'Enter phone number',
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 40),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                YellowButton(
+                  label: 'Cancel',
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  width: 0.25,
+                ),
+                YellowButton(
+                  label: 'Save Changes',
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  width: 0.5,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+var textFormDecor = InputDecoration(
+  labelStyle: const TextStyle(color: Colors.purple),
+  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+  enabledBorder: OutlineInputBorder(
+    borderSide: const BorderSide(color: Colors.yellow, width: 1),
+    borderRadius: BorderRadius.circular(10),
+  ),
+  focusedBorder: OutlineInputBorder(
+    borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
+    borderRadius: BorderRadius.circular(10),
+  ),
+);
