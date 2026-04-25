@@ -11,6 +11,7 @@ import '../minor_screens/edit_store.dart';
 
 class VisitStore extends StatefulWidget {
   final String supplierId;
+
   const VisitStore({super.key, required this.supplierId});
 
   @override
@@ -19,6 +20,7 @@ class VisitStore extends StatefulWidget {
 
 class _VisitStoreState extends State<VisitStore> {
   bool following = false;
+
   @override
   Widget build(BuildContext context) {
     final Stream<QuerySnapshot> productsStream = FirebaseFirestore.instance
@@ -26,207 +28,225 @@ class _VisitStoreState extends State<VisitStore> {
         .where("cid", isEqualTo: widget.supplierId)
         .snapshots();
 
-    CollectionReference users = FirebaseFirestore.instance.collection(
-      'suppliers',
-    );
+    CollectionReference users = FirebaseFirestore.instance.collection('suppliers');
 
     return FutureBuilder<DocumentSnapshot>(
       future: users.doc(widget.supplierId).get(),
-      builder:
-          (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
-            if (snapshot.hasError) {
-              return Text("Something went wrong");
-            }
+      builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+        if (snapshot.hasError) {
+          return const Material(child: Center(child: Text("Something went wrong")));
+        }
 
-            if (snapshot.hasData && !snapshot.data!.exists) {
-              return Text("Document does not exist");
-            }
+        if (snapshot.hasData && !snapshot.data!.exists) {
+          return const Material(child: Center(child: Text("Document does not exist")));
+        }
 
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Material(
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Material(child: Center(child: CircularProgressIndicator()));
+        }
 
-            if (snapshot.connectionState == ConnectionState.done) {
-              Map<String, dynamic> data =
-                  snapshot.data!.data() as Map<String, dynamic>;
+        if (snapshot.connectionState == ConnectionState.done) {
+          Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
 
-              return Scaffold(
-                backgroundColor: Colors.blueGrey[100],
-                appBar: AppBar(
-                  leading: YellowBackButton(),
-                  foregroundColor: Colors.white,
-                  toolbarHeight: 100,
-                  flexibleSpace: Image.asset(
-                    'images/inapp/coverimage.jpg',
+          final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+          final bool isOwner = data['cid'] == currentUserId;
+
+          return Scaffold(
+            backgroundColor: Colors.grey.shade100,
+
+            appBar: AppBar(
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              toolbarHeight: 150,
+              leading: const YellowBackButton(),
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('images/inapp/coverimage.jpg'),
                     fit: BoxFit.cover,
                   ),
-                  title: Row(
-                    children: [
-                      Container(
-                        height: 70,
-                        width: 100,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.yellow, width: 4),
-                          borderRadius: BorderRadius.circular(15),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.black.withOpacity(0.70), Colors.black.withOpacity(0.25)],
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                    ),
+                  ),
+                ),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    height: 85,
+                    width: 85,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(11),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(17),
+                      child: Image.network(data['storeLogo'], fit: BoxFit.cover),
+                    ),
+                  ),
 
-                          child: Image.network(
-                            data['storeLogo'],
-                            fit: BoxFit.cover,
+                  const SizedBox(width: 15),
+
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data['storeName'].toString().toUpperCase(),
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
                           ),
                         ),
-                      ),
-                      SizedBox(
-                        height: 100,
-                        width: MediaQuery.of(context).size.width * .5,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(
-                                    data['storeName'].toString().toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: Colors.yellow,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
+
+                        const SizedBox(height: 12),
+
+                        SizedBox(
+                          height: 40,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isOwner ? Colors.amber : Colors.white,
+                              foregroundColor: Colors.black,
+                              elevation: 5,
+                              padding: const EdgeInsets.symmetric(horizontal: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
                             ),
-                            data['sid'] ==
-                                    FirebaseAuth.instance.currentUser!.uid
-                                ? Container(
-                                    height: 35,
-                                    width:
-                                        MediaQuery.of(context).size.width * .3,
-                                    decoration: BoxDecoration(
-                                      color: Colors.yellow,
-                                      border: Border.all(
-                                        width: 3,
-                                        color: Colors.black,
-                                      ),
-                                      borderRadius: BorderRadius.circular(25),
-                                    ),
-                                    child: MaterialButton(
-                                      onPressed: () {
-                                        Navigator.push(context, MaterialPageRoute(builder: (context) => EditStore()));
-                                      },
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          Text("EDIT"),
-                                          Icon(Icons.edit, color: Colors.black),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                : Container(
-                                    height: 35,
-                                    width:
-                                        MediaQuery.of(context).size.width * .3,
-                                    decoration: BoxDecoration(
-                                      color: Colors.yellow,
-                                      border: Border.all(
-                                        width: 3,
-                                        color: Colors.black,
-                                      ),
-                                      borderRadius: BorderRadius.circular(25),
-                                    ),
-                                    child: MaterialButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          following = !following;
-                                        });
-                                      },
-                                      child: following == true
-                                          ? Text("FOLLOWING")
-                                          : Text("FOLLOW"),
-                                    ),
-                                  ),
+                            onPressed: () {
+                              if (isOwner) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => EditStore(data: data)),
+                                );
+                              } else {
+                                setState(() {
+                                  following = !following;
+                                });
+                              }
+                            },
+                            icon: Icon(
+                              isOwner
+                                  ? Icons.edit
+                                  : following
+                                  ? Icons.check_circle
+                                  : Icons.favorite_border,
+                              size: 18,
+                            ),
+                            label: Text(
+                              isOwner
+                                  ? "EDIT STORE"
+                                  : following
+                                  ? "FOLLOWING"
+                                  : "FOLLOW",
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            body: Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: productsStream,
+                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasError) {
+                    return const Center(child: Text('Something went wrong'));
+                  }
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(25),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.storefront, size: 65, color: Colors.blueGrey),
+                            SizedBox(height: 15),
+                            Text(
+                              "This Store has no items yet!",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 24,
+                                color: Colors.blueGrey,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: "Acme",
+                                letterSpacing: 1.2,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    );
+                  }
 
-                body: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: productsStream,
-                    builder:
-                        (
-                          BuildContext context,
-                          AsyncSnapshot<QuerySnapshot> snapshot,
-                        ) {
-                          if (snapshot.hasError) {
-                            return Text('Something went wrong');
-                          }
+                  return SingleChildScrollView(
+                    child: StaggeredGridView.countBuilder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      itemCount: snapshot.data!.docs.length,
+                      itemBuilder: (context, index) {
+                        return ProductModel(products: snapshot.data!.docs[index].data());
+                      },
+                      staggeredTileBuilder: (index) => StaggeredTile.fit(1),
+                    ),
+                  );
+                },
+              ),
+            ),
 
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-                          if (snapshot.data!.docs.isEmpty) {
-                            return Center(
-                              child: Text(
-                                "This Store \n \n  has no items yet!",
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 26,
-                                  color: Colors.blueGrey,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: "Acme",
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                            );
-                          }
+            floatingActionButton: FloatingActionButton(
+              onPressed: () {},
+              backgroundColor: Colors.green,
+              elevation: 8,
+              child: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white, size: 35),
+            ),
+          );
+        }
 
-                          return SingleChildScrollView(
-                            child: StaggeredGridView.countBuilder(
-                              shrinkWrap: true,
-                              physics: NeverScrollableScrollPhysics(),
-                              crossAxisCount: 2,
-                              itemCount: snapshot.data!.docs.length,
-                              itemBuilder: (context, index) {
-                                return ProductModel(
-                                  products: snapshot.data!.docs[index].data(),
-                                );
-                              },
-                              staggeredTileBuilder: (index) =>
-                                  StaggeredTile.fit(1),
-                            ),
-                          );
-                        },
-                  ),
-                ),
-                floatingActionButton: FloatingActionButton(
-                  onPressed: () {},
-                  backgroundColor: Colors.green,
-                  child: FaIcon(
-                    FontAwesomeIcons.whatsapp,
-                    color: Colors.white,
-                    size: 40,
-                  ),
-                ),
-              );
-            }
-            return Text("Loading");
-          },
+        return const Material(child: Center(child: Text("Loading")));
+      },
     );
   }
 }
