@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:multi_store_app/minor_screens/edit_product.dart';
@@ -7,7 +6,6 @@ import 'package:multi_store_app/minor_screens/product_detail.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
 import 'package:provider/provider.dart';
 
-// ── Sale price helper (shared across the app) ─────────────────────────────────
 double computeSalePrice(dynamic products) {
   final price = (products['price'] as num?)?.toDouble() ?? 0.0;
   final discount = (products['discount'] as num?)?.toInt() ?? 0;
@@ -38,7 +36,6 @@ class ProductModel extends StatelessWidget {
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
           child: Column(
             children: [
-              // ── Image + discount badge ──
               Stack(
                 children: [
                   ClipRRect(
@@ -71,7 +68,6 @@ class ProductModel extends StatelessWidget {
                         ),
                       ),
                     ),
-                  // ── Owner edit shortcut badge ──
                   if (isOwner)
                     Positioned(
                       top: 8,
@@ -91,7 +87,6 @@ class ProductModel extends StatelessWidget {
                 ],
               ),
 
-              // ── Name + price + wishlist/edit ──
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
@@ -109,7 +104,6 @@ class ProductModel extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // ── Price display ──
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -133,7 +127,6 @@ class ProductModel extends StatelessWidget {
                           ],
                         ),
 
-                        // ── Wishlist OR edit button ──
                         isOwner
                             ? IconButton(
                                 onPressed: () => _goToEdit(context, products),
@@ -159,14 +152,10 @@ class ProductModel extends StatelessWidget {
       ),
     );
   }
-
-  /// Navigates to EditProductScreen.
-  /// Fetches the latest Firestore data so the form always shows fresh values.
   void _goToEdit(BuildContext context, dynamic products) async {
     final docId = products['productId']?.toString() ?? '';
     if (docId.isEmpty) return;
 
-    // Use the data already in memory — no extra Firestore read needed
     final data = Map<String, dynamic>.from(products as Map);
 
     Navigator.push(
@@ -178,7 +167,6 @@ class ProductModel extends StatelessWidget {
   }
 }
 
-// ── Extracted wishlist button avoids stale state on list rebuilds ─────────────
 class _WishlistButton extends StatelessWidget {
   final String productId;
   final String productName;

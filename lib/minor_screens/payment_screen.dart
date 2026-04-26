@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,13 +10,17 @@ import 'package:flutter_paypal_payment/flutter_paypal_payment.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:multi_store_app/address_book/address_model.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 class PaymentScreen extends StatefulWidget {
-  const PaymentScreen({super.key});
+  final AddressModel? selectedAddress;
+  final Map<String, dynamic>? customerData;
+
+  const PaymentScreen({super.key, this.selectedAddress, this.customerData});
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -79,16 +85,21 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     Cart cart,
     String paymentMethod, {
     String? paymentIntentId,
+    AddressModel? selectedAddress,
   }) async {
+    final deliveryAddress = selectedAddress?.formattedAddress ?? customerData['address'] ?? '';
+    final deliveryPhone = selectedAddress?.phone ?? customerData['phone'] ?? '';
+    final deliveryName = selectedAddress?.fullName ?? customerData['name'] ?? '';
+
     for (final item in cart.getItems) {
       final orderId = const Uuid().v4();
 
       await FirebaseFirestore.instance.collection('orders').doc(orderId).set({
         'cid': customerData['cid'],
-        'custname': customerData['name'],
+        'custname': deliveryName,
         'email': customerData['email'],
-        'phone': customerData['phone'],
-        'address': customerData['address'],
+        'phone': deliveryPhone,
+        'address': deliveryAddress,
         'profileImage': customerData['profileImage'] ?? '',
         'sid': item.supplierId,
         'proid': item.documentId,
@@ -101,7 +112,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
         'deliverydate': '',
         'orderdate': DateTime.now(),
         'paymentstatus': paymentMethod,
-        if (paymentIntentId != null) 'paymentIntentId': paymentIntentId,
+        'paymentIntentId': ?paymentIntentId,
         'orderreview': false,
       });
 
@@ -149,12 +160,21 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     );
   }
 
-  Future<void> _payCash(Map<String, dynamic> customerData, Cart cart) async {
-    await _createOrders(customerData, cart, 'cash on delivery');
+  Future<void> _payCash(
+    Map<String, dynamic> customerData,
+    Cart cart, {
+    AddressModel? selectedAddress,
+  }) async {
+    await _createOrders(customerData, cart, 'cash on delivery', selectedAddress: selectedAddress);
     await _onPaymentSuccess(cart);
   }
 
-  Future<void> _payWithCard(Map<String, dynamic> customerData, Cart cart, double totalPaid) async {
+  Future<void> _payWithCard(
+    Map<String, dynamic> customerData,
+    Cart cart,
+    double totalPaid, {
+    AddressModel? selectedAddress,
+  }) async {
     try {
       final backendUrl = _backendUrl;
 
@@ -208,7 +228,13 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
 
       await Stripe.instance.presentPaymentSheet();
 
-      await _createOrders(customerData, cart, 'card', paymentIntentId: paymentIntentId);
+      await _createOrders(
+        customerData,
+        cart,
+        'card',
+        paymentIntentId: paymentIntentId,
+        selectedAddress: selectedAddress,
+      );
 
       await _onPaymentSuccess(cart);
     } on StripeException catch (e) {
@@ -234,8 +260,9 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     Map<String, dynamic> customerData,
     Cart cart,
     double totalPaid,
-    double totalPrice,
-  ) async {
+    double totalPrice, {
+    AddressModel? selectedAddress,
+  }) async {
     final clientId = _paypalClientId;
     final secretKey = _paypalSecretKey;
 
@@ -284,6 +311,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
                 cart,
                 'paypal',
                 paymentIntentId: params['paymentId']?.toString(),
+                selectedAddress: selectedAddress,
               );
 
               await _onPaymentSuccess(cart);
@@ -310,28 +338,33 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     Map<String, dynamic> customerData,
     Cart cart,
     double totalPaid,
-    double totalPrice,
-  ) async {
+    double totalPrice, {
+    AddressModel? selectedAddress,
+  }) async {
     setState(() => _processing = true);
 
     switch (_selectedValue) {
       case 1:
-        await _payCash(customerData, cart);
+        await _payCash(customerData, cart, selectedAddress: selectedAddress);
         break;
       case 2:
-        await _payWithCard(customerData, cart, totalPaid);
+        await _payWithCard(customerData, cart, totalPaid, selectedAddress: selectedAddress);
         break;
       case 3:
-        await _payWithPayPal(customerData, cart, totalPaid, totalPrice);
+        await _payWithPayPal(
+          customerData,
+          cart,
+          totalPaid,
+          totalPrice,
+          selectedAddress: selectedAddress,
+        );
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cart = context.watch<Cart>();
-    final totalPrice = cart.totalPrice;
-    final totalPaid = totalPrice + 10.0;
+    context.watch<Cart>();
 
     if (_showSuccess) {
       return Scaffold(
@@ -379,6 +412,11 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
       );
     }
 
+    // If customerData was passed in (from PlaceOrderScreen), skip the fetch
+    if (widget.customerData != null) {
+      return _buildPaymentUI(context, widget.customerData!);
+    }
+
     return FutureBuilder<DocumentSnapshot>(
       future: _customers.doc(FirebaseAuth.instance.currentUser!.uid).get(),
       builder: (context, snapshot) {
@@ -392,92 +430,116 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
 
         final data = snapshot.data!.data() as Map<String, dynamic>;
 
-        return Scaffold(
-          backgroundColor: const Color(0xFFF5F7FB),
-          appBar: AppBar(
-            elevation: 0,
-            centerTitle: true,
-            backgroundColor: const Color(0xFFF5F7FB),
-            leading: const AppbarBackButton(),
-            title: const AppbarTitle(title: 'Payment'),
-          ),
-          body: SlideTransition(
-            position: _slideAnim,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _SectionLabel(label: 'Order Summary'),
-                  const SizedBox(height: 10),
-                  _SummaryCard(totalPrice: totalPrice, totalPaid: totalPaid),
-                  const SizedBox(height: 22),
-                  const _SectionLabel(label: 'Delivering To'),
-                  const SizedBox(height: 10),
-                  _DeliveryCard(data: data),
-                  const SizedBox(height: 22),
-                  const _SectionLabel(label: 'Payment Method'),
-                  const SizedBox(height: 10),
-                  _PaymentOption(
-                    value: 1,
-                    groupValue: _selectedValue,
-                    onChanged: (v) => setState(() => _selectedValue = v!),
-                    title: 'Cash on Delivery',
-                    subtitle: 'Pay when your order arrives',
-                    icon: Icons.payments_rounded,
-                    iconColor: const Color(0xFF10B981),
-                    iconBg: const Color(0xFFD1FAE5),
-                  ),
-                  const SizedBox(height: 10),
-                  _PaymentOption(
-                    value: 2,
-                    groupValue: _selectedValue,
-                    onChanged: (v) => setState(() => _selectedValue = v!),
-                    title: 'Credit / Debit Card',
-                    subtitle: 'Visa, Mastercard & more — powered by Stripe',
-                    icon: Icons.credit_card_rounded,
-                    iconColor: const Color(0xFF3B82F6),
-                    iconBg: const Color(0xFFDBEAFE),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        FaIcon(FontAwesomeIcons.ccVisa, color: Color(0xFF1A1F71), size: 22),
-                        SizedBox(width: 8),
-                        FaIcon(FontAwesomeIcons.ccMastercard, color: Color(0xFFEB001B), size: 22),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _PaymentOption(
-                    value: 3,
-                    groupValue: _selectedValue,
-                    onChanged: (v) => setState(() => _selectedValue = v!),
-                    title: 'PayPal',
-                    subtitle: 'Fast and secure checkout',
-                    icon: FontAwesomeIcons.paypal,
-                    iconColor: const Color(0xFF003087),
-                    iconBg: const Color(0xFFDBEAFE),
-                    isFaIcon: true,
-                    trailing: const FaIcon(
-                      FontAwesomeIcons.ccPaypal,
-                      color: Color(0xFF009CDE),
-                      size: 26,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _PaymentMethodNote(selectedValue: _selectedValue),
-                ],
-              ),
-            ),
-          ),
-          bottomSheet: _ConfirmButton(
-            processing: _processing,
-            selectedValue: _selectedValue,
-            totalPaid: totalPaid,
-            onPressed: () => _handlePayment(data, context.read<Cart>(), totalPaid, totalPrice),
-          ),
-        );
+        return _buildPaymentUI(context, data);
       },
+    );
+  }
+
+  Widget _buildPaymentUI(BuildContext context, Map<String, dynamic> data) {
+    final cart = context.watch<Cart>();
+    final totalPrice = cart.totalPrice;
+    final totalPaid = totalPrice + 10.0;
+    // Prefer the address passed from PlaceOrderScreen
+    final addr = widget.selectedAddress;
+
+    // Build a merged delivery map for _DeliveryCard
+    final deliveryData = {
+      ...data,
+      if (addr != null) 'name': addr.fullName,
+      if (addr != null) 'address': addr.formattedAddress,
+      if (addr != null) 'phone': addr.phone,
+    };
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FB),
+      appBar: AppBar(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: const Color(0xFFF5F7FB),
+        leading: const AppbarBackButton(),
+        title: const AppbarTitle(title: 'Payment'),
+      ),
+      body: SlideTransition(
+        position: _slideAnim,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionLabel(label: 'Order Summary'),
+              const SizedBox(height: 10),
+              _SummaryCard(totalPrice: totalPrice, totalPaid: totalPaid),
+              const SizedBox(height: 22),
+              const _SectionLabel(label: 'Delivering To'),
+              const SizedBox(height: 10),
+              _DeliveryCard(data: deliveryData),
+              const SizedBox(height: 22),
+              const _SectionLabel(label: 'Payment Method'),
+              const SizedBox(height: 10),
+              _PaymentOption(
+                value: 1,
+                groupValue: _selectedValue,
+                onChanged: (v) => setState(() => _selectedValue = v!),
+                title: 'Cash on Delivery',
+                subtitle: 'Pay when your order arrives',
+                icon: Icons.payments_rounded,
+                iconColor: const Color(0xFF10B981),
+                iconBg: const Color(0xFFD1FAE5),
+              ),
+              const SizedBox(height: 10),
+              _PaymentOption(
+                value: 2,
+                groupValue: _selectedValue,
+                onChanged: (v) => setState(() => _selectedValue = v!),
+                title: 'Credit / Debit Card',
+                subtitle: 'Visa, Mastercard & more — powered by Stripe',
+                icon: Icons.credit_card_rounded,
+                iconColor: const Color(0xFF3B82F6),
+                iconBg: const Color(0xFFDBEAFE),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    FaIcon(FontAwesomeIcons.ccVisa, color: Color(0xFF1A1F71), size: 22),
+                    SizedBox(width: 8),
+                    FaIcon(FontAwesomeIcons.ccMastercard, color: Color(0xFFEB001B), size: 22),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              _PaymentOption(
+                value: 3,
+                groupValue: _selectedValue,
+                onChanged: (v) => setState(() => _selectedValue = v!),
+                title: 'PayPal',
+                subtitle: 'Fast and secure checkout',
+                icon: FontAwesomeIcons.paypal,
+                iconColor: const Color(0xFF003087),
+                iconBg: const Color(0xFFDBEAFE),
+                isFaIcon: true,
+                trailing: const FaIcon(
+                  FontAwesomeIcons.ccPaypal,
+                  color: Color(0xFF009CDE),
+                  size: 26,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _PaymentMethodNote(selectedValue: _selectedValue),
+            ],
+          ),
+        ),
+      ),
+      bottomSheet: _ConfirmButton(
+        processing: _processing,
+        selectedValue: _selectedValue,
+        totalPaid: totalPaid,
+        onPressed: () => _handlePayment(
+          data,
+          context.read<Cart>(),
+          totalPaid,
+          totalPrice,
+          selectedAddress: widget.selectedAddress,
+        ),
+      ),
     );
   }
 }

@@ -64,7 +64,6 @@ class _MyStoreState extends State<MyStore> with SingleTickerProviderStateMixin {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // ── Store hero card ──
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -86,7 +85,6 @@ class _MyStoreState extends State<MyStore> with SingleTickerProviderStateMixin {
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
-                          // Logo
                           Container(
                             width: 90,
                             height: 90,
@@ -136,7 +134,6 @@ class _MyStoreState extends State<MyStore> with SingleTickerProviderStateMixin {
 
                   const SizedBox(height: 20),
 
-                  // ── Quick stats ──
                   StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('products')
@@ -198,7 +195,6 @@ class _MyStoreState extends State<MyStore> with SingleTickerProviderStateMixin {
 
                   const SizedBox(height: 20),
 
-                  // ── Store info ──
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
@@ -244,7 +240,6 @@ class _MyStoreState extends State<MyStore> with SingleTickerProviderStateMixin {
 
                   const SizedBox(height: 16),
 
-                  // ── View public store button ──
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(

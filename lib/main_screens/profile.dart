@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:multi_store_app/address_book/address_book_screen.dart';
 import 'package:multi_store_app/customer_screens/customer_orders.dart';
 import 'package:multi_store_app/customer_screens/customer_wishlist.dart';
 import 'package:multi_store_app/main_screens/cart.dart';
@@ -232,11 +233,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ),
                                         YellowDivider(),
                                         RepeatedListTile(
-                                          title: 'Address',
-                                          subtitle: data['address'] == ''
-                                              ? 'No. 123, ABC Street, City'
+                                          title: 'Address Book',
+                                          subtitle: data['address'] == null || data['address'] == ''
+                                              ? 'No saved addresses'
                                               : data['address'],
                                           icon: Icons.location_pin,
+                                          onPressed: () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => const AddressBookScreen(),
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -253,7 +260,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                     child: Column(
                                       children: [
-                                        // ── Edit Profile — now navigates ──
                                         RepeatedListTile(
                                           title: "Edit Profile",
                                           subtitle: "",
@@ -368,10 +374,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// Edit Profile Screen
-// ══════════════════════════════════════════════════════════════════════════════
-
 class EditProfileScreen extends StatefulWidget {
   final String documentId;
   final Map<String, dynamic> currentData;
@@ -481,7 +483,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // ── Profile photo ──────────────────────────────────────────
               Center(
                 child: Stack(
                   children: [
@@ -524,7 +525,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               const SizedBox(height: 16),
 
-              // ── Fields ─────────────────────────────────────────────────
               _ProfileField(
                 controller: _nameCtrl,
                 label: 'Full Name',
@@ -581,7 +581,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 }
 
-// ── Profile field ──────────────────────────────────────────────────────────────
 
 class _ProfileField extends StatelessWidget {
   final TextEditingController controller;
@@ -631,7 +630,6 @@ class _ProfileField extends StatelessWidget {
   }
 }
 
-// ── Reusable widgets (same as before) ────────────────────────────────────────
 
 class YellowDivider extends StatelessWidget {
   const YellowDivider({super.key});

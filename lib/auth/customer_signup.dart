@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -228,7 +230,6 @@ class _CustomerSignupState extends State<CustomerSignup> {
                           onChanged: (value) {
                             name = value;
                           },
-                          // controller: _nameController,
                           decoration: textFormDecoration.copyWith(
                             labelText: "Full Name",
                             hintText: "Enter Your Full Name",
