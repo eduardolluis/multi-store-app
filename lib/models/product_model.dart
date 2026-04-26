@@ -1,6 +1,8 @@
 import 'package:collection/collection.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:multi_store_app/minor_screens/edit_product.dart';
 import 'package:multi_store_app/minor_screens/product_detail.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
 import 'package:provider/provider.dart';
@@ -69,10 +71,27 @@ class ProductModel extends StatelessWidget {
                         ),
                       ),
                     ),
+                  // ── Owner edit shortcut badge ──
+                  if (isOwner)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: () => _goToEdit(context, products),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                        ),
+                      ),
+                    ),
                 ],
               ),
 
-              // ── Name + price + wishlist ──
+              // ── Name + price + wishlist/edit ──
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
@@ -114,10 +133,10 @@ class ProductModel extends StatelessWidget {
                           ],
                         ),
 
-                        // ── Wishlist / edit button ──
+                        // ── Wishlist OR edit button ──
                         isOwner
                             ? IconButton(
-                                onPressed: () {},
+                                onPressed: () => _goToEdit(context, products),
                                 icon: const Icon(Icons.edit, color: Colors.black),
                               )
                             : _WishlistButton(
@@ -137,6 +156,23 @@ class ProductModel extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Navigates to EditProductScreen.
+  /// Fetches the latest Firestore data so the form always shows fresh values.
+  void _goToEdit(BuildContext context, dynamic products) async {
+    final docId = products['productId']?.toString() ?? '';
+    if (docId.isEmpty) return;
+
+    // Use the data already in memory — no extra Firestore read needed
+    final data = Map<String, dynamic>.from(products as Map);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProductScreen(docId: docId, data: data),
       ),
     );
   }
@@ -175,8 +211,8 @@ class _WishlistButton extends StatelessWidget {
         } else {
           context.read<Wish>().addWishItem(
             productName,
-            price, // original price stored for display/strikethrough
-            salePrice, // actual price paid — passed to cart from wish
+            price,
+            salePrice,
             1,
             quantity,
             images,
