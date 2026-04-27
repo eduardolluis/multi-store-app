@@ -437,10 +437,6 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
 
   final List<String> _labels = ['Home', 'Work', 'Other'];
 
-  CollectionReference get _addressCollection {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    return FirebaseFirestore.instance.collection('customers').doc(uid).collection('addresses');
-  }
 
   @override
   void initState() {
@@ -520,7 +516,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
               .toList();
           final defaultDoc = defaultDocs.isNotEmpty ? defaultDocs.first : snap.docs.first;
           final defaultAddr = AddressModel.fromMap(
-            defaultDoc.data() as Map<String, dynamic>,
+            defaultDoc.data(),
             defaultDoc.id,
           );
           await custRef.update({'address': defaultAddr.formattedAddress});

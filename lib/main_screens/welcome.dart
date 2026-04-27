@@ -15,11 +15,7 @@ const textColors = [
   Colors.teal,
 ];
 
-const textStyle = TextStyle(
-  fontSize: 45,
-  fontWeight: FontWeight.bold,
-  fontFamily: 'Acme',
-);
+const textStyle = TextStyle(fontSize: 45, fontWeight: FontWeight.bold, fontFamily: 'Acme');
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -28,23 +24,17 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with SingleTickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   bool processing = false;
 
-  CollectionReference customers = FirebaseFirestore.instance.collection(
-    'customers',
-  );
+  CollectionReference customers = FirebaseFirestore.instance.collection('customers');
 
   late String _uid = _uid = FirebaseAuth.instance.currentUser!.uid;
 
   @override
   void initState() {
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    );
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2));
     _controller.repeat();
     super.initState();
   }
@@ -60,10 +50,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('images/inapp/bgimage.jpg'),
-            fit: BoxFit.cover,
-          ),
+          image: DecorationImage(image: AssetImage('images/inapp/bgimage.jpg'), fit: BoxFit.cover),
         ),
         constraints: BoxConstraints.expand(),
         child: SafeArea(
@@ -72,16 +59,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             children: [
               AnimatedTextKit(
                 animatedTexts: [
-                  ColorizeAnimatedText(
-                    'WELCOME',
-                    textStyle: textStyle,
-                    colors: textColors,
-                  ),
-                  ColorizeAnimatedText(
-                    'Duck Store',
-                    textStyle: textStyle,
-                    colors: textColors,
-                  ),
+                  ColorizeAnimatedText('WELCOME', textStyle: textStyle, colors: textColors),
+                  ColorizeAnimatedText('Duck Store', textStyle: textStyle, colors: textColors),
                 ],
                 isRepeatingAnimation: true,
                 repeatForever: true,
@@ -155,10 +134,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             YellowButton(
                               label: 'Log In',
                               onPressed: () {
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  '/supplier_login',
-                                );
+                                Navigator.pushReplacementNamed(context, '/supplier_login');
                               },
                               width: 0.25,
                             ),
@@ -167,10 +143,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               child: YellowButton(
                                 label: 'Sign Up',
                                 onPressed: () {
-                                  Navigator.pushReplacementNamed(
-                                    context,
-                                    '/supplier_signup',
-                                  );
+                                  Navigator.pushReplacementNamed(context, '/supplier_signup');
                                 },
                                 width: 0.25,
                               ),
@@ -204,10 +177,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           child: YellowButton(
                             label: 'Log In',
                             onPressed: () {
-                              Navigator.pushReplacementNamed(
-                                context,
-                                '/customer_login',
-                              );
+                              Navigator.pushReplacementNamed(context, '/customer_login');
                             },
                             width: 0.25,
                           ),
@@ -215,10 +185,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         YellowButton(
                           label: 'Sign Up',
                           onPressed: () {
-                            Navigator.pushReplacementNamed(
-                              context,
-                              '/customer_signup',
-                            );
+                            Navigator.pushReplacementNamed(context, '/customer_signup');
                           },
                           width: 0.25,
                         ),
@@ -231,25 +198,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 25),
                 child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white38.withOpacity(0.3),
-                  ),
+                  decoration: BoxDecoration(color: Colors.white38.withOpacity(0.3)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       GoogleFacebookLogin(
                         label: 'Google',
                         onPressed: () {},
-                        child: Image(
-                          image: AssetImage('images/inapp/google.jpg'),
-                        ),
+                        child: Image(image: AssetImage('images/inapp/google.jpg')),
                       ),
                       GoogleFacebookLogin(
                         label: 'Facebook',
                         onPressed: () {},
-                        child: Image(
-                          image: AssetImage('images/inapp/facebook.jpg'),
-                        ),
+                        child: Image(image: AssetImage('images/inapp/facebook.jpg')),
                       ),
                       processing == true
                           ? const CircularProgressIndicator()
@@ -259,33 +220,23 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 setState(() {
                                   processing = true;
                                 });
-                                await FirebaseAuth.instance
-                                    .signInAnonymously()
-                                    .whenComplete(() async {
-                                      _uid = FirebaseAuth
-                                          .instance
-                                          .currentUser!
-                                          .uid;
-                                      await customers.doc(_uid).set({
-                                        'name': '',
-                                        'email': '',
-                                        'profileImage': '',
-                                        'phone': "",
-                                        'address': "",
-                                        'cid': '',
-                                      });
+                                await FirebaseAuth.instance.signInAnonymously().whenComplete(
+                                  () async {
+                                    _uid = FirebaseAuth.instance.currentUser!.uid;
+                                    await customers.doc(_uid).set({
+                                      'name': '',
+                                      'email': '',
+                                      'profileImage': '',
+                                      'phone': "",
+                                      'address': "",
+                                      'cid': '',
                                     });
-
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  '/customer_home',
+                                  },
                                 );
+
+                                Navigator.pushReplacementNamed(context, '/customer_home');
                               },
-                              child: Icon(
-                                Icons.person,
-                                color: Colors.lightBlueAccent,
-                                size: 55,
-                              ),
+                              child: Icon(Icons.person, color: Colors.lightBlueAccent, size: 55),
                             ),
                     ],
                   ),
@@ -310,10 +261,7 @@ class AnimatedLogo extends StatelessWidget {
     return AnimatedBuilder(
       animation: _controller.view,
       builder: (context, child) {
-        return Transform.rotate(
-          angle: _controller.value * 2 * pi,
-          child: child,
-        );
+        return Transform.rotate(angle: _controller.value * 2 * pi, child: child);
       },
       child: Image(image: AssetImage('images/inapp/logo.jpg')),
     );

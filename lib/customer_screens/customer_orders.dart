@@ -47,7 +47,7 @@ class CustomerOrders extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const Center(
+            return const Center(  
               child: Text(
                 'Something went wrong',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),

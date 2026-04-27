@@ -1,11 +1,17 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:multi_store_app/auth/auth_wrapper.dart';
+import 'package:multi_store_app/auth/change_password_screen.dart';
 import 'package:multi_store_app/auth/customer_login.dart';
 import 'package:multi_store_app/auth/customer_signup.dart';
+import 'package:multi_store_app/auth/forgot_password_screen.dart';
 import 'package:multi_store_app/auth/supplier_login.dart';
 import 'package:multi_store_app/auth/supplier_signup.dart';
+import 'package:multi_store_app/auth/verify_email_screen.dart';
+import 'package:multi_store_app/firebase_options.dart';
 import 'package:multi_store_app/main_screens/customer_home.dart';
 import 'package:multi_store_app/main_screens/supplier_home.dart';
 import 'package:multi_store_app/main_screens/welcome.dart';
@@ -14,18 +20,19 @@ import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/providers/stripe_id.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   Stripe.publishableKey = STRIPE_PUBLISHABLE_KEY;
   Stripe.merchantIdentifier = 'merchant.flutter.stripe.test';
   Stripe.urlScheme = 'flutterstripe';
   await Stripe.instance.applySettings();
 
-  await dotenv.load(fileName: ".env");
+  await dotenv.load(fileName: '.env');
 
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug);
 
@@ -52,15 +59,22 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/welcome_screen',
+      home: AuthWrapper(
+        onAuthenticated: (User user) => const WelcomeScreen(),
+        unauthenticatedWidget: const WelcomeScreen(),
+      ),
       routes: {
-        '/welcome_screen': (context) => WelcomeScreen(),
-        '/customer_home': (context) => CustomerHomeScreen(),
-        '/supplier_home': (context) => SupplierHomeScreen(),
-        '/customer_signup': (context) => CustomerSignup(),
-        '/customer_login': (context) => CustomerLogin(),
-        '/supplier_signup': (context) => SupplierRegister(),
-        '/supplier_login': (context) => SupplierLogin(),
+        '/welcome_screen': (context) => const WelcomeScreen(),
+        '/customer_home': (context) => const CustomerHomeScreen(),
+        '/supplier_home': (context) => const SupplierHomeScreen(),
+        '/customer_signup': (context) => const CustomerSignup(),
+        '/customer_login': (context) => const CustomerLogin(),
+        '/supplier_signup': (context) => const SupplierRegister(),
+        '/supplier_login': (context) => const SupplierLogin(),
+        // New auth routes
+        '/verify_email': (context) => const VerifyEmailScreen(nextRoute: '/customer_home'),
+        '/forgot_password': (context) => const ForgotPasswordScreen(),
+        '/change_password': (context) => const ChangePasswordScreen(),
       },
     );
   }
