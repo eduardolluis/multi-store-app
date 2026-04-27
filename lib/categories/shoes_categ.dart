@@ -28,12 +28,13 @@ class ShoesCategory extends StatelessWidget {
                       crossAxisSpacing: 5,
                       crossAxisCount: 3,
                       childAspectRatio: 0.8,
+                      // Fix: was shoes[index - 1] which crashes at index 0
                       children: List.generate(shoes.length - 1, (index) {
                         return SubCategoryModel(
                           mainCategoryName: 'shoes',
-                          subCategoryName: shoes[index - 1],
+                          subCategoryName: shoes[index + 1],
                           assetName: 'images/shoes/shoes$index',
-                          subCategorLabel: shoes[index - 1],
+                          subCategorLabel: shoes[index + 1],
                         );
                       }),
                     ),
@@ -42,11 +43,7 @@ class ShoesCategory extends StatelessWidget {
               ),
             ),
           ),
-          const Positioned(
-            bottom: 0,
-            right: 0,
-            child: Slidebar(mainCategoryName: 'shoes'),
-          ),
+          const Positioned(bottom: 0, right: 0, child: Slidebar(mainCategoryName: 'shoes')),
         ],
       ),
     );

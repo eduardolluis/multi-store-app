@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:multi_store_app/auth/auth_service.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 
@@ -26,19 +27,16 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  bool processing = false;
+  bool _processing = false;
+  bool _googleLoading = false;
 
   CollectionReference customers = FirebaseFirestore.instance.collection('customers');
-
-  String _uid = '';
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2));
     _controller.repeat();
-
-    // Si ya hay sesión activa, redirigir
     _checkExistingSession();
   }
 
@@ -46,7 +44,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    // Si ya hay usuario logueado, ir a home correspondiente
     final isCustomer = await FirebaseFirestore.instance
         .collection('customers')
         .doc(user.uid)
@@ -59,6 +56,83 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
       Navigator.pushReplacementNamed(context, '/customer_home');
     } else {
       Navigator.pushReplacementNamed(context, '/supplier_home');
+    }
+  }
+
+  Future<void> _googleSignIn() async {
+    setState(() => _googleLoading = true);
+    try {
+      final cred = await AuthService.instance.signInWithGoogle();
+      if (cred == null) return; // user cancelled
+
+      if (!mounted) return;
+
+      final uid = cred.user!.uid;
+
+      // Check which collection this user belongs to
+      final isCustomer = await AuthService.instance.userDocumentExists(
+        uid: uid,
+        collection: 'customers',
+      );
+      final isSupplier = await AuthService.instance.userDocumentExists(
+        uid: uid,
+        collection: 'suppliers',
+      );
+
+      if (!mounted) return;
+
+      if (isSupplier) {
+        Navigator.pushReplacementNamed(context, '/supplier_home');
+      } else {
+        // New user or existing customer — create customer doc if needed
+        if (!isCustomer) {
+          final user = cred.user!;
+          await AuthService.instance.createCustomerDocument(
+            uid: uid,
+            name: user.displayName ?? 'Google User',
+            email: user.email ?? '',
+            profileImage: user.photoURL ?? '',
+          );
+        }
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/customer_home');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in failed: $e'), behavior: SnackBarBehavior.floating),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
+  }
+
+  Future<void> _guestSignIn() async {
+    setState(() => _processing = true);
+    try {
+      final credential = await FirebaseAuth.instance.signInAnonymously();
+      final uid = credential.user?.uid ?? '';
+
+      if (uid.isNotEmpty) {
+        await customers.doc(uid).set({
+          'name': '',
+          'email': '',
+          'profileImage': '',
+          'phone': '',
+          'address': '',
+          'cid': uid,
+        });
+      }
+
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/customer_home');
+      }
+    } catch (e) {
+      debugPrint('Guest sign-in error: $e');
+    } finally {
+      if (mounted) setState(() => _processing = false);
     }
   }
 
@@ -94,6 +168,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                 width: 200,
                 child: Image(image: AssetImage('images/inapp/logo.jpg')),
               ),
+
               SizedBox(
                 height: 80,
                 child: DefaultTextStyle(
@@ -113,6 +188,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                   ),
                 ),
               ),
+
+              // ── Suppliers row ──────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -156,18 +233,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                             AnimatedLogo(controller: _controller),
                             YellowButton(
                               label: 'Log In',
-                              onPressed: () {
-                                Navigator.pushReplacementNamed(context, '/supplier_login');
-                              },
+                              onPressed: () =>
+                                  Navigator.pushReplacementNamed(context, '/supplier_login'),
                               width: 0.25,
                             ),
                             Padding(
                               padding: const EdgeInsets.only(right: 9),
                               child: YellowButton(
                                 label: 'Sign Up',
-                                onPressed: () {
-                                  Navigator.pushReplacementNamed(context, '/supplier_signup');
-                                },
+                                onPressed: () =>
+                                    Navigator.pushReplacementNamed(context, '/supplier_signup'),
                                 width: 0.25,
                               ),
                             ),
@@ -179,6 +254,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                 ],
               ),
 
+              // ── Customers row ──────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -199,17 +275,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                           padding: const EdgeInsets.only(left: 8.0),
                           child: YellowButton(
                             label: 'Log In',
-                            onPressed: () {
-                              Navigator.pushReplacementNamed(context, '/customer_login');
-                            },
+                            onPressed: () =>
+                                Navigator.pushReplacementNamed(context, '/customer_login'),
                             width: 0.25,
                           ),
                         ),
                         YellowButton(
                           label: 'Sign Up',
-                          onPressed: () {
-                            Navigator.pushReplacementNamed(context, '/customer_signup');
-                          },
+                          onPressed: () =>
+                              Navigator.pushReplacementNamed(context, '/customer_signup'),
                           width: 0.25,
                         ),
                         AnimatedLogo(controller: _controller),
@@ -218,6 +292,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                   ),
                 ],
               ),
+
+              // ── Social / Guest login ───────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 25),
                 child: Container(
@@ -225,49 +301,35 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      GoogleFacebookLogin(
-                        label: 'Google',
-                        onPressed: () {
-                          Navigator.pushReplacementNamed(context, '/customer_login');
-                        },
-                        child: const Image(image: AssetImage('images/inapp/google.jpg')),
-                      ),
+                      // Google sign-in
+                      _googleLoading
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: 50,
+                                height: 50,
+                                child: CircularProgressIndicator(color: Colors.white),
+                              ),
+                            )
+                          : GoogleFacebookLogin(
+                              label: 'Google',
+                              onPressed: _googleSignIn,
+                              child: const Image(image: AssetImage('images/inapp/google.jpg')),
+                            ),
+
+                      // Facebook (placeholder)
                       GoogleFacebookLogin(
                         label: 'Facebook',
                         onPressed: () {},
                         child: const Image(image: AssetImage('images/inapp/facebook.jpg')),
                       ),
-                      processing
+
+                      // Guest
+                      _processing
                           ? const CircularProgressIndicator()
                           : GoogleFacebookLogin(
                               label: 'Guest',
-                              onPressed: () async {
-                                setState(() => processing = true);
-                                try {
-                                  final credential = await FirebaseAuth.instance
-                                      .signInAnonymously();
-                                  _uid = credential.user?.uid ?? '';
-
-                                  if (_uid.isNotEmpty) {
-                                    await customers.doc(_uid).set({
-                                      'name': '',
-                                      'email': '',
-                                      'profileImage': '',
-                                      'phone': '',
-                                      'address': '',
-                                      'cid': _uid,
-                                    });
-                                  }
-
-                                  if (mounted) {
-                                    Navigator.pushReplacementNamed(context, '/customer_home');
-                                  }
-                                } catch (e) {
-                                  debugPrint('Guest sign-in error: $e');
-                                } finally {
-                                  if (mounted) setState(() => processing = false);
-                                }
-                              },
+                              onPressed: _guestSignIn,
                               child: const Icon(
                                 Icons.person,
                                 color: Colors.lightBlueAccent,

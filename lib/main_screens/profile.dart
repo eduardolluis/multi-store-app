@@ -21,8 +21,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  // Both anonymous and registered customers are stored in 'customers'
   CollectionReference customers = FirebaseFirestore.instance.collection('customers');
-  CollectionReference anonymous = FirebaseFirestore.instance.collection('anonymous');
 
   @override
   Widget build(BuildContext context) {
@@ -30,12 +30,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const Scaffold(body: Center(child: Text('Please log in to view your profile')));
     }
 
-    final isAnonymous = FirebaseAuth.instance.currentUser?.isAnonymous ?? false;
-
     return FutureBuilder(
-      future: isAnonymous
-          ? anonymous.doc(widget.documentId).get()
-          : customers.doc(widget.documentId).get(),
+      future: customers.doc(widget.documentId).get(),
       builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
         if (snapshot.hasError) {
           return const Scaffold(body: Center(child: Text("Something went wrong")));
