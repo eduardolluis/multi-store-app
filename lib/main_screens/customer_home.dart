@@ -18,42 +18,47 @@ class CustomerHomeScreen extends StatefulWidget {
 
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   int _selectedIndex = 0;
-  final List<Widget> _tabs = [
-    HomeScreen(),
-    CategoryScreen(),
-    StoresScreen(),
-    CartScreen(),
-    ProfileScreen(documentId: FirebaseAuth.instance.currentUser!.uid),
-  ];
+
+  // FIX: no usar currentUser! directamente en la lista — puede ser null
+  // en casos extremos de re-renders. Usamos getter seguro.
+  String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
+
   @override
   Widget build(BuildContext context) {
+    // FIX: construir los tabs en build() para acceder a context y uid de forma segura
+    final tabs = [
+      const HomeScreen(),
+      const CategoryScreen(),
+      const StoresScreen(),
+      const CartScreen(),
+      ProfileScreen(documentId: _uid),
+    ];
+
     return Scaffold(
-      body: _tabs[_selectedIndex],
+      body: tabs[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         elevation: 0,
         type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
         selectedItemColor: Colors.black,
         currentIndex: _selectedIndex,
         items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Category'),
-          BottomNavigationBarItem(icon: Icon(Icons.shop), label: 'Stores'),
-
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          const BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Category'),
+          const BottomNavigationBarItem(icon: Icon(Icons.shop), label: 'Stores'),
           BottomNavigationBarItem(
             icon: badge.Badge(
-              showBadge: context.read<Cart>().getItems.isEmpty ? false : true,
-              badgeStyle: badge.BadgeStyle(badgeColor: Colors.yellow),
+              showBadge: context.watch<Cart>().getItems.isEmpty ? false : true,
+              badgeStyle: const badge.BadgeStyle(badgeColor: Colors.yellow),
               badgeContent: Text(
                 context.watch<Cart>().getItems.length.toString(),
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-
-              child: Icon(Icons.shopping_cart),
+              child: const Icon(Icons.shopping_cart),
             ),
             label: 'Cart',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          const BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         onTap: (index) {
           setState(() {

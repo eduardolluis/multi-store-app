@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:multi_store_app/address_book/address_book_screen.dart';
+import 'package:multi_store_app/auth/change_password_screen.dart';
 import 'package:multi_store_app/customer_screens/customer_orders.dart';
 import 'package:multi_store_app/customer_screens/customer_wishlist.dart';
 import 'package:multi_store_app/main_screens/cart.dart';
@@ -25,17 +26,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.documentId.isEmpty) {
+      return const Scaffold(body: Center(child: Text('Please log in to view your profile')));
+    }
+
+    final isAnonymous = FirebaseAuth.instance.currentUser?.isAnonymous ?? false;
+
     return FutureBuilder(
-      future: FirebaseAuth.instance.currentUser!.isAnonymous
+      future: isAnonymous
           ? anonymous.doc(widget.documentId).get()
           : customers.doc(widget.documentId).get(),
       builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
         if (snapshot.hasError) {
-          return const Text("Something went wrong");
+          return const Scaffold(body: Center(child: Text("Something went wrong")));
         }
 
         if (snapshot.hasData && !snapshot.data!.exists) {
-          return const Text("Document does not exist");
+          return const Scaffold(body: Center(child: Text("Document does not exist")));
         }
 
         if (snapshot.connectionState == ConnectionState.done) {
@@ -74,7 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 padding: const EdgeInsets.only(top: 8, left: 30),
                                 child: Row(
                                   children: [
-                                    data['profileImage'] == ''
+                                    data['profileImage'] == '' || data['profileImage'] == null
                                         ? const CircleAvatar(
                                             radius: 50,
                                             backgroundImage: AssetImage('images/inapp/guest.jpg'),
@@ -86,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     Padding(
                                       padding: const EdgeInsets.only(left: 25),
                                       child: Text(
-                                        data['name'] == ''
+                                        data['name'] == '' || data['name'] == null
                                             ? "GUEST"
                                             : data['name'].toString().toUpperCase(),
                                         style: const TextStyle(
@@ -130,7 +137,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) =>
-                                              CartScreen(back: AppbarBackButton()),
+                                              CartScreen(back: const AppbarBackButton()),
                                         ),
                                       );
                                     },
@@ -152,7 +159,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     onPressed: () {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(builder: (context) => CustomerOrders()),
+                                        MaterialPageRoute(
+                                          builder: (context) => const CustomerOrders(),
+                                        ),
                                       );
                                     },
                                     child: SizedBox(
@@ -179,7 +188,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     onPressed: () {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(builder: (context) => WishListScreen()),
+                                        MaterialPageRoute(
+                                          builder: (context) => const WishListScreen(),
+                                        ),
                                       );
                                     },
                                     child: SizedBox(
@@ -218,7 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       children: [
                                         RepeatedListTile(
                                           title: 'Email Address',
-                                          subtitle: data['email'] == ''
+                                          subtitle: data['email'] == '' || data['email'] == null
                                               ? 'Example@email.com'
                                               : data['email'].toString().toLowerCase(),
                                           icon: Icons.email,
@@ -226,7 +237,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         YellowDivider(),
                                         RepeatedListTile(
                                           title: 'Phone No.',
-                                          subtitle: data['phone'] == ''
+                                          subtitle: data['phone'] == '' || data['phone'] == null
                                               ? '+1234567890'
                                               : data['phone'],
                                           icon: Icons.phone,
@@ -280,7 +291,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         RepeatedListTile(
                                           title: "Change Password",
                                           icon: Icons.lock,
-                                          onPressed: () => _showChangePassword(context),
+                                          onPressed: () => Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => const ChangePasswordScreen(),
+                                            ),
+                                          ),
                                         ),
                                         YellowDivider(),
                                         RepeatedListTile(
@@ -322,54 +338,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         return const Center(child: CircularProgressIndicator(color: Colors.purple));
       },
-    );
-  }
-
-  void _showChangePassword(BuildContext context) {
-    final ctrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Change Password', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: TextField(
-          controller: ctrl,
-          obscureText: true,
-          decoration: InputDecoration(
-            hintText: 'New password',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
-            onPressed: () async {
-              final newPass = ctrl.text.trim();
-              if (newPass.length < 6) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Password must be at least 6 characters')),
-                );
-                return;
-              }
-              await FirebaseAuth.instance.currentUser?.updatePassword(newPass);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Password updated')));
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -417,7 +385,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<String?> _uploadImage() async {
     if (_imageFile == null) return null;
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
     final supabase = Supabase.instance.client;
     final fileName = 'profile_${uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     await supabase.storage.from('images').upload(fileName, File(_imageFile!.path));
@@ -516,15 +485,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 8),
               TextButton(
                 onPressed: _pickImage,
                 child: const Text('Change photo', style: TextStyle(color: Colors.purple)),
               ),
-
               const SizedBox(height: 16),
-
               _ProfileField(
                 controller: _nameCtrl,
                 label: 'Full Name',
@@ -581,7 +547,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 }
 
-
 class _ProfileField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -630,14 +595,13 @@ class _ProfileField extends StatelessWidget {
   }
 }
 
-
 class YellowDivider extends StatelessWidget {
   const YellowDivider({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 40),
       child: Divider(color: Colors.yellow, thickness: 1.2),
     );
   }
@@ -675,12 +639,12 @@ class ProfileHeaderLabel extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(height: 40, width: 50, child: Divider(color: Colors.grey, thickness: 1)),
+          const SizedBox(height: 40, width: 50, child: Divider(color: Colors.grey, thickness: 1)),
           Text(
             headerLabel,
             style: const TextStyle(color: Colors.grey, fontSize: 24, fontWeight: FontWeight.w600),
           ),
-          SizedBox(height: 40, width: 50, child: Divider(color: Colors.grey, thickness: 1)),
+          const SizedBox(height: 40, width: 50, child: Divider(color: Colors.grey, thickness: 1)),
         ],
       ),
     );

@@ -14,7 +14,7 @@ class Cart extends ChangeNotifier {
     return total;
   }
 
-  int? get count => _list.length;
+  int get count => _list.length;
 
   void addItem(
     String name,

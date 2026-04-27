@@ -94,7 +94,7 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     for (final item in cart.getItems) {
       final orderId = const Uuid().v4();
 
-      await FirebaseFirestore.instance.collection('orders').doc(orderId).set({
+      final orderData = <String, dynamic>{
         'cid': customerData['cid'],
         'custname': deliveryName,
         'email': customerData['email'],
@@ -112,9 +112,14 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
         'deliverydate': '',
         'orderdate': DateTime.now(),
         'paymentstatus': paymentMethod,
-        'paymentIntentId': ?paymentIntentId,
         'orderreview': false,
-      });
+      };
+
+      if (paymentIntentId != null) {
+        orderData['paymentIntentId'] = paymentIntentId;
+      }
+
+      await FirebaseFirestore.instance.collection('orders').doc(orderId).set(orderData);
 
       await FirebaseFirestore.instance.runTransaction((tx) async {
         final ref = FirebaseFirestore.instance.collection('products').doc(item.documentId);
@@ -412,7 +417,6 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
       );
     }
 
-    // If customerData was passed in (from PlaceOrderScreen), skip the fetch
     if (widget.customerData != null) {
       return _buildPaymentUI(context, widget.customerData!);
     }
@@ -439,10 +443,8 @@ class _PaymentScreenState extends State<PaymentScreen> with TickerProviderStateM
     final cart = context.watch<Cart>();
     final totalPrice = cart.totalPrice;
     final totalPaid = totalPrice + 10.0;
-    // Prefer the address passed from PlaceOrderScreen
     final addr = widget.selectedAddress;
 
-    // Build a merged delivery map for _DeliveryCard
     final deliveryData = {
       ...data,
       if (addr != null) 'name': addr.fullName,

@@ -30,13 +30,36 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
 
   CollectionReference customers = FirebaseFirestore.instance.collection('customers');
 
-  late String _uid = _uid = FirebaseAuth.instance.currentUser!.uid;
+  String _uid = '';
 
   @override
   void initState() {
+    super.initState();
     _controller = AnimationController(vsync: this, duration: const Duration(seconds: 2));
     _controller.repeat();
-    super.initState();
+
+    // Si ya hay sesión activa, redirigir
+    _checkExistingSession();
+  }
+
+  Future<void> _checkExistingSession() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Si ya hay usuario logueado, ir a home correspondiente
+    final isCustomer = await FirebaseFirestore.instance
+        .collection('customers')
+        .doc(user.uid)
+        .get()
+        .then((d) => d.exists);
+
+    if (!mounted) return;
+
+    if (isCustomer) {
+      Navigator.pushReplacementNamed(context, '/customer_home');
+    } else {
+      Navigator.pushReplacementNamed(context, '/supplier_home');
+    }
   }
 
   @override
@@ -52,7 +75,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
         decoration: const BoxDecoration(
           image: DecorationImage(image: AssetImage('images/inapp/bgimage.jpg'), fit: BoxFit.cover),
         ),
-        constraints: BoxConstraints.expand(),
+        constraints: const BoxConstraints.expand(),
         child: SafeArea(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -66,10 +89,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                 repeatForever: true,
               ),
 
-              SizedBox(
+              const SizedBox(
                 height: 120,
                 width: 200,
-                child: const Image(image: AssetImage('images/inapp/logo.jpg')),
+                child: Image(image: AssetImage('images/inapp/logo.jpg')),
               ),
               SizedBox(
                 height: 80,
@@ -84,7 +107,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                     animatedTexts: [
                       RotateAnimatedText('Buy'),
                       RotateAnimatedText('Shop'),
-                      RotateAnimatedText('Dcck Store'),
+                      RotateAnimatedText('Duck Store'),
                     ],
                     repeatForever: true,
                   ),
@@ -104,9 +127,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                             bottomLeft: Radius.circular(50),
                           ),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: const Text(
+                        child: const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Text(
                             "Suppliers only",
                             style: TextStyle(
                               color: Colors.yellowAccent,
@@ -204,39 +227,52 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                     children: [
                       GoogleFacebookLogin(
                         label: 'Google',
-                        onPressed: () {},
-                        child: Image(image: AssetImage('images/inapp/google.jpg')),
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(context, '/customer_login');
+                        },
+                        child: const Image(image: AssetImage('images/inapp/google.jpg')),
                       ),
                       GoogleFacebookLogin(
                         label: 'Facebook',
                         onPressed: () {},
-                        child: Image(image: AssetImage('images/inapp/facebook.jpg')),
+                        child: const Image(image: AssetImage('images/inapp/facebook.jpg')),
                       ),
-                      processing == true
+                      processing
                           ? const CircularProgressIndicator()
                           : GoogleFacebookLogin(
                               label: 'Guest',
                               onPressed: () async {
-                                setState(() {
-                                  processing = true;
-                                });
-                                await FirebaseAuth.instance.signInAnonymously().whenComplete(
-                                  () async {
-                                    _uid = FirebaseAuth.instance.currentUser!.uid;
+                                setState(() => processing = true);
+                                try {
+                                  final credential = await FirebaseAuth.instance
+                                      .signInAnonymously();
+                                  _uid = credential.user?.uid ?? '';
+
+                                  if (_uid.isNotEmpty) {
                                     await customers.doc(_uid).set({
                                       'name': '',
                                       'email': '',
                                       'profileImage': '',
-                                      'phone': "",
-                                      'address': "",
-                                      'cid': '',
+                                      'phone': '',
+                                      'address': '',
+                                      'cid': _uid,
                                     });
-                                  },
-                                );
+                                  }
 
-                                Navigator.pushReplacementNamed(context, '/customer_home');
+                                  if (mounted) {
+                                    Navigator.pushReplacementNamed(context, '/customer_home');
+                                  }
+                                } catch (e) {
+                                  debugPrint('Guest sign-in error: $e');
+                                } finally {
+                                  if (mounted) setState(() => processing = false);
+                                }
                               },
-                              child: Icon(Icons.person, color: Colors.lightBlueAccent, size: 55),
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.lightBlueAccent,
+                                size: 55,
+                              ),
                             ),
                     ],
                   ),
@@ -263,7 +299,7 @@ class AnimatedLogo extends StatelessWidget {
       builder: (context, child) {
         return Transform.rotate(angle: _controller.value * 2 * pi, child: child);
       },
-      child: Image(image: AssetImage('images/inapp/logo.jpg')),
+      child: const Image(image: AssetImage('images/inapp/logo.jpg')),
     );
   }
 }
@@ -288,7 +324,7 @@ class GoogleFacebookLogin extends StatelessWidget {
         child: Column(
           children: [
             SizedBox(height: 50, width: 50, child: child),
-            Text(label, style: TextStyle(color: Colors.white)),
+            Text(label, style: const TextStyle(color: Colors.white)),
           ],
         ),
       ),
