@@ -63,13 +63,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
     setState(() => _googleLoading = true);
     try {
       final cred = await AuthService.instance.signInWithGoogle();
-      if (cred == null) return; // user cancelled
+      if (cred == null) return;
 
       if (!mounted) return;
 
-      final uid = cred.user!.uid;
+      final user = cred.user;
+      if (user == null) return;
 
-      // Check which collection this user belongs to
+      final uid = user.uid;
+
       final isCustomer = await AuthService.instance.userDocumentExists(
         uid: uid,
         collection: 'customers',
@@ -84,7 +86,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
       if (isSupplier) {
         Navigator.pushReplacementNamed(context, '/supplier_home');
       } else {
-        // New user or existing customer — create customer doc if needed
         if (!isCustomer) {
           final user = cred.user!;
           await AuthService.instance.createCustomerDocument(
