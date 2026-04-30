@@ -28,7 +28,6 @@ class ShoesCategory extends StatelessWidget {
                       crossAxisSpacing: 5,
                       crossAxisCount: 3,
                       childAspectRatio: 0.8,
-                      // Fix: was shoes[index - 1] which crashes at index 0
                       children: List.generate(shoes.length - 1, (index) {
                         return SubCategoryModel(
                           mainCategoryName: 'shoes',

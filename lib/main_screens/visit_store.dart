@@ -11,7 +11,6 @@ import '../minor_screens/edit_store.dart';
 
 class VisitStore extends StatefulWidget {
   final String supplierId;
-
   const VisitStore({super.key, required this.supplierId});
 
   @override
@@ -25,7 +24,7 @@ class _VisitStoreState extends State<VisitStore> {
   Widget build(BuildContext context) {
     final Stream<QuerySnapshot> productsStream = FirebaseFirestore.instance
         .collection('products')
-        .where("cid", isEqualTo: widget.supplierId)
+        .where('cid', isEqualTo: widget.supplierId)
         .snapshots();
 
     final Stream<DocumentSnapshot> supplierStream = FirebaseFirestore.instance
@@ -37,79 +36,50 @@ class _VisitStoreState extends State<VisitStore> {
       stream: supplierStream,
       builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
         if (snapshot.hasError) {
-          return const Material(child: Center(child: Text("Something went wrong")));
+          return const Material(child: Center(child: Text('Something went wrong')));
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Material(child: Center(child: CircularProgressIndicator()));
         }
 
-        if (snapshot.hasData && !snapshot.data!.exists) {
-          return const Material(child: Center(child: Text("Document does not exist")));
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Material(child: Center(child: Text('Store not found')));
         }
 
-        Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
+        final data = snapshot.data!.data() as Map<String, dynamic>;
 
-        final currentUserId = FirebaseAuth.instance.currentUser!.uid;
-        final bool isOwner = data['cid'] == currentUserId;
+        final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+        // Suppliers can store their id under 'sid' or 'cid' depending on
+        // which signup flow was used — check both.
+        final storeOwnerId = (data['sid'] ?? data['cid'] ?? '').toString();
+        final bool isOwner = currentUserId.isNotEmpty && storeOwnerId == currentUserId;
+
+        final coverImage = (data['coverImage'] ?? '').toString();
+        final storeLogo = (data['storeLogo'] ?? '').toString();
+        final storeName = (data['storeName'] ?? 'Store').toString();
 
         return Scaffold(
           backgroundColor: Colors.grey.shade100,
-
           appBar: AppBar(
             elevation: 0,
             backgroundColor: Colors.transparent,
             foregroundColor: Colors.white,
             toolbarHeight: 150,
             leading: const YellowBackButton(),
-            flexibleSpace: Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage(data['coverImage']),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.black.withOpacity(0.70), Colors.black.withOpacity(0.25)],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                  ),
-                ),
-              ),
-            ),
+            flexibleSpace: _CoverBackground(coverImage: coverImage),
             title: Row(
               children: [
-                Container(
-                  height: 85,
-                  width: 85,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(17),
-                    child: Image.network(data['storeLogo'], fit: BoxFit.cover),
-                  ),
-                ),
-
+                _StoreLogo(url: storeLogo),
                 const SizedBox(width: 15),
-
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        data['storeName'].toString().toUpperCase(),
+                        storeName.toUpperCase(),
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 22,
@@ -118,9 +88,7 @@ class _VisitStoreState extends State<VisitStore> {
                           letterSpacing: 1,
                         ),
                       ),
-
                       const SizedBox(height: 12),
-
                       SizedBox(
                         height: 40,
                         child: ElevatedButton.icon(
@@ -135,12 +103,10 @@ class _VisitStoreState extends State<VisitStore> {
                             if (isOwner) {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => EditStore(data: data)),
+                                MaterialPageRoute(builder: (_) => EditStore(data: data)),
                               );
                             } else {
-                              setState(() {
-                                following = !following;
-                              });
+                              setState(() => following = !following);
                             }
                           },
                           icon: Icon(
@@ -153,10 +119,10 @@ class _VisitStoreState extends State<VisitStore> {
                           ),
                           label: Text(
                             isOwner
-                                ? "EDIT STORE"
+                                ? 'EDIT STORE'
                                 : following
-                                ? "FOLLOWING"
-                                : "FOLLOW",
+                                ? 'FOLLOWING'
+                                : 'FOLLOW',
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ),
@@ -167,7 +133,6 @@ class _VisitStoreState extends State<VisitStore> {
               ],
             ),
           ),
-
           body: Padding(
             padding: const EdgeInsets.all(10.0),
             child: StreamBuilder<QuerySnapshot>(
@@ -176,12 +141,10 @@ class _VisitStoreState extends State<VisitStore> {
                 if (snapshot.hasError) {
                   return const Center(child: Text('Something went wrong'));
                 }
-
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
-                if (snapshot.data!.docs.isEmpty) {
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
                     child: Container(
                       padding: const EdgeInsets.all(25),
@@ -202,13 +165,13 @@ class _VisitStoreState extends State<VisitStore> {
                           Icon(Icons.storefront, size: 65, color: Colors.blueGrey),
                           SizedBox(height: 15),
                           Text(
-                            "This Store has no items yet!",
+                            'This Store has no items yet!',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 24,
                               color: Colors.blueGrey,
                               fontWeight: FontWeight.bold,
-                              fontFamily: "Acme",
+                              fontFamily: 'Acme',
                               letterSpacing: 1.2,
                             ),
                           ),
@@ -229,13 +192,12 @@ class _VisitStoreState extends State<VisitStore> {
                     itemBuilder: (context, index) {
                       return ProductModel(products: snapshot.data!.docs[index].data());
                     },
-                    staggeredTileBuilder: (index) => StaggeredTile.fit(1),
+                    staggeredTileBuilder: (_) => StaggeredTile.fit(1),
                   ),
                 );
               },
             ),
           ),
-
           floatingActionButton: FloatingActionButton(
             onPressed: () {},
             backgroundColor: Colors.green,
@@ -244,6 +206,74 @@ class _VisitStoreState extends State<VisitStore> {
           ),
         );
       },
+    );
+  }
+}
+
+// ── Small helpers ─────────────────────────────────────────────────────────────
+
+class _CoverBackground extends StatelessWidget {
+  final String coverImage;
+  const _CoverBackground({required this.coverImage});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.blueGrey.shade800,
+        image: coverImage.isNotEmpty
+            ? DecorationImage(
+                image: NetworkImage(coverImage),
+                fit: BoxFit.cover,
+                onError: (_, __) {},
+              )
+            : null,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.black.withOpacity(0.70), Colors.black.withOpacity(0.25)],
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StoreLogo extends StatelessWidget {
+  final String url;
+  const _StoreLogo({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 85,
+      width: 85,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white, width: 3),
+        color: Colors.white24,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(17),
+        child: url.isEmpty
+            ? const Icon(Icons.store, color: Colors.white54, size: 40)
+            : Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.store, color: Colors.white54, size: 40),
+              ),
+      ),
     );
   }
 }

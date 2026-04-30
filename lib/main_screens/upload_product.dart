@@ -17,8 +17,7 @@ class UploadProductScreen extends StatefulWidget {
 
 class _UploadProductScreenState extends State<UploadProductScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
-      GlobalKey<ScaffoldMessengerState>();
+  final GlobalKey<ScaffoldMessengerState> _scaffoldKey = GlobalKey<ScaffoldMessengerState>();
 
   late double price;
   late int quantity;
@@ -67,17 +66,13 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
       maxWidth: 300,
       imageQuality: 95,
     );
-
-    setState(() {
-      imagesFilesList = pickedImages;
-    });
+    setState(() => imagesFilesList = pickedImages);
   }
 
   Widget previewImages() {
     if (imagesFilesList.isEmpty) {
-      return const Center(child: Text("No images selected"));
+      return const Center(child: Text('No images selected'));
     }
-
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       itemCount: imagesFilesList.length,
@@ -100,19 +95,17 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
 
   Future<void> uploadImages() async {
     final supabase = Supabase.instance.client;
-
     imagesUrlList.clear();
 
     final uploadFutures = imagesFilesList.map((image) async {
       final file = File(image.path);
+      // Fix: bucket is 'products', path is just the filename — no subfolder
+      // prefix. Previously used 'products/$fileName' inside bucket 'products'
+      // which resolved to products/products/fileName in storage.
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
 
-      final fileName = "${DateTime.now().millisecondsSinceEpoch}_${image.name}";
-
-      final path = 'products/$fileName';
-
-      await supabase.storage.from('products').upload(path, file);
-
-      return supabase.storage.from('products').getPublicUrl(path);
+      await supabase.storage.from('products').upload(fileName, file);
+      return supabase.storage.from('products').getPublicUrl(fileName);
     }).toList();
 
     imagesUrlList = await Future.wait(uploadFutures);
@@ -120,11 +113,15 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
 
   Future<void> uploadData() async {
     final firestore = FirebaseFirestore.instance;
-
     productId = const Uuid().v4();
 
+    // Supplier docs may store owner id under 'sid' or 'cid' depending on
+    // which signup flow was used. We always write 'cid' on products so the
+    // rest of the app (visit_store, manage_products, etc.) can query by it.
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
     await firestore.collection('products').doc(productId).set({
-      "productId": productId,
+      'productId': productId,
       'quantity': quantity,
       'category': mainCategoryValue,
       'subcategory': subCategoryValue,
@@ -133,7 +130,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
       'productDescription': productDescription,
       'images': imagesUrlList,
       'discount': 0,
-      'cid': FirebaseAuth.instance.currentUser!.uid,
+      'cid': uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -142,38 +139,34 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
     if (processing) return;
 
     if (!_formKey.currentState!.validate()) {
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Fill all fields");
+      MyMessageHandler.showSnackBar(_scaffoldKey, 'Fill all fields');
       return;
     }
 
     if (imagesFilesList.isEmpty) {
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Pick images first");
+      MyMessageHandler.showSnackBar(_scaffoldKey, 'Pick images first');
       return;
     }
 
     _formKey.currentState!.save();
-
     setState(() => processing = true);
 
     try {
       await uploadImages();
       await uploadData();
-
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Uploaded!");
-
+      MyMessageHandler.showSnackBar(_scaffoldKey, 'Uploaded!');
       setState(() {
         imagesFilesList.clear();
         imagesUrlList.clear();
         mainCategoryValue = null;
         subCategoryValue = null;
       });
-
       _formKey.currentState!.reset();
     } catch (e) {
-      print(e);
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Upload failed");
+      debugPrint('Upload error: $e');
+      MyMessageHandler.showSnackBar(_scaffoldKey, 'Upload failed: $e');
     } finally {
-      setState(() => processing = false);
+      if (mounted) setState(() => processing = false);
     }
   }
 
@@ -184,7 +177,7 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
       child: Scaffold(
         backgroundColor: Colors.grey[100],
         appBar: AppBar(
-          title: const Text("Upload Product"),
+          title: const Text('Upload Product'),
           backgroundColor: Colors.yellow,
           foregroundColor: Colors.black,
         ),
@@ -200,30 +193,21 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                     color: Colors.blueGrey[200],
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: previewImages(),
-                  ),
+                  child: ClipRRect(borderRadius: BorderRadius.circular(15), child: previewImages()),
                 ),
-
                 const SizedBox(height: 15),
-
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black12, blurRadius: 5),
-                    ],
+                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5)],
                   ),
                   child: Column(
                     children: [
                       DropdownButtonFormField<String>(
-                        initialValue: mainCategoryValue,
-                        decoration: textFormDecor.copyWith(
-                          labelText: "Main Category",
-                        ),
+                        value: mainCategoryValue,
+                        decoration: textFormDecor.copyWith(labelText: 'Main Category'),
                         items: maincateg.map((e) {
                           return DropdownMenuItem(value: e, child: Text(e));
                         }).toList(),
@@ -235,121 +219,79 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                                   subCategoryValue = null;
                                 });
                               },
-                        validator: (value) =>
-                            value == null ? "Select category" : null,
+                        validator: (v) => v == null ? 'Select category' : null,
                       ),
-
                       const SizedBox(height: 10),
-
                       DropdownButtonFormField<String>(
-                        initialValue: subCategoryValue,
-                        decoration: textFormDecor.copyWith(
-                          labelText: "Sub Category",
-                        ),
+                        value: subCategoryValue,
+                        decoration: textFormDecor.copyWith(labelText: 'Sub Category'),
                         items: currentSubCategories.map((e) {
                           return DropdownMenuItem(value: e, child: Text(e));
                         }).toList(),
                         onChanged: processing
                             ? null
-                            : (value) {
-                                setState(() {
-                                  subCategoryValue = value;
-                                });
-                              },
-                        validator: (value) =>
-                            value == null ? "Select subcategory" : null,
+                            : (value) => setState(() => subCategoryValue = value),
+                        validator: (v) => v == null ? 'Select subcategory' : null,
                       ),
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 15),
-
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black12, blurRadius: 5),
-                    ],
+                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 5)],
                   ),
                   child: Column(
                     children: [
                       TextFormField(
-                        decoration: textFormDecor.copyWith(labelText: "Price"),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
+                        decoration: textFormDecor.copyWith(labelText: 'Price'),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         enabled: !processing,
-                        validator: (value) {
-                          if (value!.isEmpty) return "Price required";
-                          if (!value.isValidPrice()) return "Invalid price";
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Price required';
+                          if (!v.isValidPrice()) return 'Invalid price';
                           return null;
                         },
-                        onSaved: (value) {
-                          price = double.parse(value!);
-                        },
+                        onSaved: (v) => price = double.parse(v!),
                       ),
-
                       const SizedBox(height: 10),
-
                       TextFormField(
-                        decoration: textFormDecor.copyWith(
-                          labelText: "Quantity",
-                        ),
+                        decoration: textFormDecor.copyWith(labelText: 'Quantity'),
                         keyboardType: TextInputType.number,
                         enabled: !processing,
-                        validator: (value) {
-                          if (value!.isEmpty) return "Quantity required";
-                          if (!value.isValidQuantity()) {
-                            return "Invalid quantity";
-                          }
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Quantity required';
+                          if (!v.isValidQuantity()) return 'Invalid quantity';
                           return null;
                         },
-                        onSaved: (value) {
-                          quantity = int.parse(value!);
-                        },
+                        onSaved: (v) => quantity = int.parse(v!),
                       ),
-
                       const SizedBox(height: 10),
-
                       TextFormField(
-                        decoration: textFormDecor.copyWith(
-                          labelText: "Product Name",
-                        ),
+                        decoration: textFormDecor.copyWith(labelText: 'Product Name'),
                         enabled: !processing,
-                        validator: (value) =>
-                            value!.isEmpty ? "Enter name" : null,
-                        onSaved: (value) {
-                          productName = value!;
-                        },
+                        validator: (v) => (v == null || v.isEmpty) ? 'Enter name' : null,
+                        onSaved: (v) => productName = v!,
                       ),
-
                       const SizedBox(height: 10),
-
                       TextFormField(
                         maxLines: 3,
-                        decoration: textFormDecor.copyWith(
-                          labelText: "Description",
-                        ),
+                        decoration: textFormDecor.copyWith(labelText: 'Description'),
                         enabled: !processing,
-                        validator: (value) =>
-                            value!.isEmpty ? "Enter description" : null,
-                        onSaved: (value) {
-                          productDescription = value!;
-                        },
+                        validator: (v) => (v == null || v.isEmpty) ? 'Enter description' : null,
+                        onSaved: (v) => productDescription = v!,
                       ),
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 80),
               ],
             ),
           ),
         ),
-
         floatingActionButton: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -358,24 +300,15 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                   ? null
                   : (imagesFilesList.isEmpty
                         ? pickProductImages
-                        : () {
-                            setState(() {
-                              imagesFilesList.clear();
-                            });
-                          }),
+                        : () => setState(() => imagesFilesList.clear())),
               backgroundColor: Colors.yellow,
-              icon: Icon(
-                imagesFilesList.isEmpty ? Icons.photo : Icons.delete,
-                color: Colors.black,
-              ),
+              icon: Icon(imagesFilesList.isEmpty ? Icons.photo : Icons.delete, color: Colors.black),
               label: Text(
-                imagesFilesList.isEmpty ? "Gallery" : "Clear",
+                imagesFilesList.isEmpty ? 'Gallery' : 'Clear',
                 style: const TextStyle(color: Colors.black),
               ),
             ),
-
             const SizedBox(width: 10),
-
             FloatingActionButton.extended(
               onPressed: processing ? null : uploadProduct,
               backgroundColor: Colors.yellow,
@@ -383,14 +316,11 @@ class _UploadProductScreenState extends State<UploadProductScreen> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.black,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                     )
                   : const Icon(Icons.upload, color: Colors.black),
               label: Text(
-                processing ? "Uploading..." : "Upload",
+                processing ? 'Uploading...' : 'Upload',
                 style: const TextStyle(color: Colors.black),
               ),
             ),
@@ -415,13 +345,9 @@ var textFormDecor = InputDecoration(
 );
 
 extension QuantityValidator on String {
-  bool isValidQuantity() {
-    return RegExp(r'^[1-9][0-9]*$').hasMatch(this);
-  }
+  bool isValidQuantity() => RegExp(r'^[1-9][0-9]*$').hasMatch(this);
 }
 
 extension PriceValidator on String {
-  bool isValidPrice() {
-    return RegExp(r'^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$').hasMatch(this);
-  }
+  bool isValidPrice() => RegExp(r'^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$').hasMatch(this);
 }

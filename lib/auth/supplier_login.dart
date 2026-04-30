@@ -26,7 +26,6 @@ class _SupplierLoginState extends State<SupplierLogin> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _loading = true);
 
     try {
@@ -56,10 +55,8 @@ class _SupplierLoginState extends State<SupplierLogin> {
 
   Future<void> _googleLogin() async {
     setState(() => _googleLoading = true);
-
     try {
       final cred = await AuthService.instance.signInWithGoogle();
-
       if (cred == null) return;
       if (!mounted) return;
 
@@ -71,17 +68,16 @@ class _SupplierLoginState extends State<SupplierLogin> {
       );
 
       if (!docExists) {
-        final googleUser = cred.user!;
-
+        final user = cred.user!;
         await AuthService.instance.createSupplierDocument(
           uid: uid,
-          name: googleUser.displayName ?? 'Google Supplier',
-          email: googleUser.email ?? '',
-          profileImage: googleUser.photoURL ?? '',
-          storeName: '',
+          name: user.displayName ?? 'Google Supplier',
+          email: user.email ?? '',
+          profileImage: user.photoURL ?? '',
+          storeName: user.displayName ?? '',
           storeDescription: '',
           storeAddress: '',
-          storeEmail: googleUser.email ?? '',
+          storeEmail: user.email ?? '',
           storePhone: '',
         );
       }
@@ -114,7 +110,6 @@ class _SupplierLoginState extends State<SupplierLogin> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AuthHeaderLabel(headerLabel: 'Supplier Log In'),
-
                     const SizedBox(height: 50),
 
                     Padding(
@@ -125,11 +120,9 @@ class _SupplierLoginState extends State<SupplierLogin> {
                           if (v == null || v.trim().isEmpty) {
                             return 'Please enter your email address.';
                           }
-
                           if (!v.isValidEmail()) {
                             return 'Please enter a valid email address.';
                           }
-
                           return null;
                         },
                         onChanged: (v) => _email = v.trim(),
@@ -149,7 +142,6 @@ class _SupplierLoginState extends State<SupplierLogin> {
                           if (v == null || v.isEmpty) {
                             return 'Please enter your password.';
                           }
-
                           return null;
                         },
                         onChanged: (v) => _password = v,
@@ -158,11 +150,7 @@ class _SupplierLoginState extends State<SupplierLogin> {
                           hintText: 'Enter your password',
                           prefixIcon: const Icon(Icons.lock_outline, color: Colors.purple),
                           suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _passwordVisible = !_passwordVisible;
-                              });
-                            },
+                            onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
                             icon: Icon(
                               _passwordVisible ? Icons.visibility_off : Icons.visibility,
                               color: Colors.purple,
@@ -175,12 +163,10 @@ class _SupplierLoginState extends State<SupplierLogin> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-                          );
-                        },
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                        ),
                         child: const Text(
                           'Forgot Password?',
                           style: TextStyle(
@@ -195,9 +181,7 @@ class _SupplierLoginState extends State<SupplierLogin> {
                     HaveAccount(
                       haveAccount: "Don't have a supplier account? ",
                       actionLabel: 'Register',
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, '/supplier_signup');
-                      },
+                      onPressed: () => Navigator.pushReplacementNamed(context, '/supplier_signup'),
                     ),
 
                     const SizedBox(height: 20),
@@ -237,7 +221,6 @@ class _SupplierLoginState extends State<SupplierLogin> {
 
 class _GoogleButton extends StatelessWidget {
   const _GoogleButton({required this.onPressed});
-
   final VoidCallback onPressed;
 
   @override
@@ -264,4 +247,3 @@ class _GoogleButton extends StatelessWidget {
     );
   }
 }
- 

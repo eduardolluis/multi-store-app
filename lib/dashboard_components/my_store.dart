@@ -195,6 +195,7 @@ class _MyStoreState extends State<MyStore> with SingleTickerProviderStateMixin {
 
                   const SizedBox(height: 20),
 
+                  // ── Info card ───────────────────────────────────────
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
@@ -243,12 +244,10 @@ class _MyStoreState extends State<MyStore> with SingleTickerProviderStateMixin {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => VisitStore(supplierId: _uid)),
-                        );
-                      },
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => VisitStore(supplierId: _uid)),
+                      ),
                       style: ElevatedButton.styleFrom(
                         elevation: 0,
                         backgroundColor: const Color(0xFF111827),
@@ -274,11 +273,9 @@ class _MyStoreState extends State<MyStore> with SingleTickerProviderStateMixin {
 }
 
 class _StatBox extends StatelessWidget {
-  final String label;
-  final String value;
+  final String label, value;
   final IconData icon;
   final Color color;
-
   const _StatBox({
     required this.label,
     required this.value,
@@ -329,9 +326,7 @@ class _StatBox extends StatelessWidget {
 
 class _InfoRow extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final String value;
-
+  final String label, value;
   const _InfoRow({required this.icon, required this.label, required this.value});
 
   @override

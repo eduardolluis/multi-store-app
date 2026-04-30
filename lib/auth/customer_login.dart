@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:multi_store_app/auth/auth_service.dart';
 import 'package:multi_store_app/auth/forgot_password_screen.dart';
 import 'package:multi_store_app/auth/verify_email_screen.dart';
@@ -56,16 +55,15 @@ class _CustomerLoginState extends State<CustomerLogin> {
     }
   }
 
-  // ── Google Sign-In ────────────────────────────────────────────────────────
-
   Future<void> _googleLogin() async {
     setState(() => _googleLoading = true);
     try {
       final cred = await AuthService.instance.signInWithGoogle();
-      if (cred == null) return;
+      if (cred == null) return; // user cancelled
       if (!mounted) return;
 
       final uid = cred.user!.uid;
+
       final docExists = await AuthService.instance.userDocumentExists(
         uid: uid,
         collection: 'customers',
@@ -85,8 +83,8 @@ class _CustomerLoginState extends State<CustomerLogin> {
       Navigator.pushReplacementNamed(context, '/customer_home');
     } on FirebaseAuthException catch (e) {
       MyMessageHandler.showSnackBar(_scaffoldKey, AuthService.friendlyError(e));
-    } catch (_) {
-      MyMessageHandler.showSnackBar(_scaffoldKey, 'Google sign-in failed.');
+    } catch (e) {
+      MyMessageHandler.showSnackBar(_scaffoldKey, 'Google sign-in failed. Try again.');
     } finally {
       if (mounted) setState(() => _googleLoading = false);
     }
@@ -188,7 +186,6 @@ class _CustomerLoginState extends State<CustomerLogin> {
 
                     const SizedBox(height: 20),
 
-                    // Log In button
                     _loading
                         ? const Center(child: CircularProgressIndicator(color: Colors.purple))
                         : AuthButton(mainButtonLabel: 'Log In', onPressed: _login),
