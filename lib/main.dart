@@ -12,7 +12,7 @@ import 'package:multi_store_app/auth/supplier_login.dart';
 import 'package:multi_store_app/auth/supplier_signup.dart';
 import 'package:multi_store_app/auth/verify_email_screen.dart';
 import 'package:multi_store_app/firebase_options.dart';
-import 'package:multi_store_app/main_screens/customer_home.dart';
+import 'package:multi_store_app/main_screens/enhanced_customer_home.dart';
 import 'package:multi_store_app/main_screens/supplier_home.dart';
 import 'package:multi_store_app/main_screens/welcome.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -59,19 +59,32 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF111827),
+          brightness: Brightness.light,
+        ),
+        fontFamily: 'Acme',
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
+      ),
       home: AuthWrapper(
         onAuthenticated: (User user) => const WelcomeScreen(),
         unauthenticatedWidget: const WelcomeScreen(),
       ),
       routes: {
         '/welcome_screen': (context) => const WelcomeScreen(),
-        '/customer_home': (context) => const CustomerHomeScreen(),
+        '/customer_home': (context) => const EnhancedCustomerHomeScreen(),
         '/supplier_home': (context) => const SupplierHomeScreen(),
         '/customer_signup': (context) => const CustomerSignup(),
         '/customer_login': (context) => const CustomerLogin(),
         '/supplier_signup': (context) => const SupplierRegister(),
         '/supplier_login': (context) => const SupplierLogin(),
-        // New auth routes
         '/verify_email': (context) => const VerifyEmailScreen(nextRoute: '/customer_home'),
         '/forgot_password': (context) => const ForgotPasswordScreen(),
         '/change_password': (context) => const ChangePasswordScreen(),
