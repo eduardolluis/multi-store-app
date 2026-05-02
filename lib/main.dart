@@ -19,6 +19,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/providers/stripe_id.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
+// SQL Providers
+import 'package:multi_store_app/sql/sql_cart_provider.dart';
+import 'package:multi_store_app/sql/sql_wish_provider.dart';
+import 'package:multi_store_app/sql/search_history_provider.dart';
+import 'package:multi_store_app/sql/recently_viewed_provider.dart';
+import 'package:multi_store_app/sql/product_notes_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
@@ -46,6 +52,22 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => Cart()),
         ChangeNotifierProvider(create: (_) => Wish()),
+
+        ChangeNotifierProvider(
+          create: (_) => SqlCartProvider()..loadFromDb(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SqlWishProvider()..loadFromDb(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SearchHistoryProvider()..loadFromDb(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => RecentlyViewedProvider()..loadFromDb(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProductNotesProvider(),
+        ),
       ],
       child: const MyApp(),
     ),

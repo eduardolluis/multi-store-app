@@ -63,6 +63,9 @@ dependencies:
   flutter_paypal_payment_plus: ^1.1.0
   google_sign_in: '>=6.0.0 <7.0.0'
   shared_preferences: ^2.5.5
+  # SQL local database
+  sqflite: ^2.3.3+2
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
