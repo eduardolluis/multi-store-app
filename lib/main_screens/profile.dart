@@ -8,6 +8,7 @@ import 'package:multi_store_app/auth/change_password_screen.dart';
 import 'package:multi_store_app/customer_screens/customer_orders.dart';
 import 'package:multi_store_app/customer_screens/customer_wishlist.dart';
 import 'package:multi_store_app/main_screens/cart.dart';
+import 'package:multi_store_app/utilities/guest_guard.dart';
 import 'package:multi_store_app/widgets/alert_dialog.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -21,11 +22,16 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Both anonymous and registered customers are stored in 'customers'
   CollectionReference customers = FirebaseFirestore.instance.collection('customers');
+
+  bool get _isGuest => isGuestUser();
 
   @override
   Widget build(BuildContext context) {
+    if (_isGuest) {
+      return _GuestProfileView();
+    }
+
     if (widget.documentId.isEmpty) {
       return const Scaffold(body: Center(child: Text('Please log in to view your profile')));
     }
@@ -43,293 +49,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         if (snapshot.connectionState == ConnectionState.done) {
           Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
-          return Scaffold(
-            backgroundColor: Colors.grey[300],
-            body: Stack(
-              children: [
-                Container(
-                  height: 200,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(colors: [Colors.yellow, Colors.brown]),
-                  ),
-                ),
-                CustomScrollView(
-                  slivers: [
-                    SliverAppBar(
-                      centerTitle: true,
-                      pinned: true,
-                      elevation: 0,
-                      backgroundColor: Colors.white,
-                      expandedHeight: 140,
-                      flexibleSpace: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return FlexibleSpaceBar(
-                            title: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 200),
-                              opacity: constraints.biggest.height <= 120 ? 1 : 0,
-                              child: const Text("Account", style: TextStyle(color: Colors.black)),
-                            ),
-                            background: Container(
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(colors: [Colors.yellow, Colors.brown]),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 8, left: 30),
-                                child: Row(
-                                  children: [
-                                    data['profileImage'] == '' || data['profileImage'] == null
-                                        ? const CircleAvatar(
-                                            radius: 50,
-                                            backgroundImage: AssetImage('images/inapp/guest.jpg'),
-                                          )
-                                        : CircleAvatar(
-                                            radius: 50,
-                                            backgroundImage: NetworkImage(data['profileImage']),
-                                          ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 25),
-                                      child: Text(
-                                        data['name'] == '' || data['name'] == null
-                                            ? "GUEST"
-                                            : data['name'].toString().toUpperCase(),
-                                        style: const TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Column(
-                        children: [
-                          Container(
-                            height: 80,
-                            width: MediaQuery.of(context).size.width * 0.9,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                Container(
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black54,
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: Radius.circular(30),
-                                      bottomLeft: Radius.circular(30),
-                                    ),
-                                  ),
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              CartScreen(back: const AppbarBackButton()),
-                                        ),
-                                      );
-                                    },
-                                    child: SizedBox(
-                                      height: 40,
-                                      width: MediaQuery.of(context).size.width * 0.2,
-                                      child: const Center(
-                                        child: Text(
-                                          'Cart',
-                                          style: TextStyle(color: Colors.yellow, fontSize: 24),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  color: Colors.yellow,
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const CustomerOrders(),
-                                        ),
-                                      );
-                                    },
-                                    child: SizedBox(
-                                      height: 40,
-                                      width: MediaQuery.of(context).size.width * 0.2,
-                                      child: const Center(
-                                        child: Text(
-                                          'Orders',
-                                          style: TextStyle(color: Colors.black54, fontSize: 20),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black54,
-                                    borderRadius: BorderRadius.only(
-                                      topRight: Radius.circular(30),
-                                      bottomRight: Radius.circular(30),
-                                    ),
-                                  ),
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const WishListScreen(),
-                                        ),
-                                      );
-                                    },
-                                    child: SizedBox(
-                                      height: 40,
-                                      width: MediaQuery.of(context).size.width * 0.2,
-                                      child: const Center(
-                                        child: Text(
-                                          'WishList',
-                                          style: TextStyle(color: Colors.yellow, fontSize: 20),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            color: Colors.grey[300],
-                            child: Column(
-                              children: [
-                                const SizedBox(
-                                  height: 150,
-                                  child: Image(image: AssetImage('images/inapp/logo.jpg')),
-                                ),
-                                ProfileHeaderLabel(headerLabel: "  Account Info  "),
-                                Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Container(
-                                    height: 260,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        RepeatedListTile(
-                                          title: 'Email Address',
-                                          subtitle: data['email'] == '' || data['email'] == null
-                                              ? 'Example@email.com'
-                                              : data['email'].toString().toLowerCase(),
-                                          icon: Icons.email,
-                                        ),
-                                        YellowDivider(),
-                                        RepeatedListTile(
-                                          title: 'Phone No.',
-                                          subtitle: data['phone'] == '' || data['phone'] == null
-                                              ? '+1234567890'
-                                              : data['phone'],
-                                          icon: Icons.phone,
-                                        ),
-                                        YellowDivider(),
-                                        RepeatedListTile(
-                                          title: 'Address Book',
-                                          subtitle: data['address'] == null || data['address'] == ''
-                                              ? 'No saved addresses'
-                                              : data['address'],
-                                          icon: Icons.location_pin,
-                                          onPressed: () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => const AddressBookScreen(),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                ProfileHeaderLabel(headerLabel: "  Account Settings  "),
-                                Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Container(
-                                    height: 260,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        RepeatedListTile(
-                                          title: "Edit Profile",
-                                          subtitle: "",
-                                          icon: Icons.edit,
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) => EditProfileScreen(
-                                                  documentId: widget.documentId,
-                                                  currentData: data,
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                        YellowDivider(),
-                                        RepeatedListTile(
-                                          title: "Change Password",
-                                          icon: Icons.lock,
-                                          onPressed: () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => const ChangePasswordScreen(),
-                                            ),
-                                          ),
-                                        ),
-                                        YellowDivider(),
-                                        RepeatedListTile(
-                                          title: 'Log Out',
-                                          icon: Icons.logout,
-                                          onPressed: () async {
-                                            MyAlertDialog.showMyDialog(
-                                              context: context,
-                                              title: "Log Out",
-                                              content: "Are you sure you want to log out?",
-                                              tabNo: () => Navigator.pop(context),
-                                              tabYes: () async {
-                                                await FirebaseAuth.instance.signOut();
-                                                Navigator.pop(context);
-                                                Navigator.pushReplacementNamed(
-                                                  context,
-                                                  '/welcome_screen',
-                                                );
-                                              },
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
+          return _AuthenticatedProfile(documentId: widget.documentId, data: data);
         }
 
         return const Center(child: CircularProgressIndicator(color: Colors.purple));
@@ -337,6 +57,528 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+
+
+class _GuestProfileView extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 220,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: const Color(0xFF111827),
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF1a1a2e), Color(0xFF111827)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.white12,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white24, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.person_outline_rounded,
+                          color: Colors.white54,
+                          size: 40,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Guest',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Browsing as guest',
+                        style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF111827),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.login_rounded, color: Colors.white, size: 28),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Sign in to unlock all features',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Save your cart, wishlist, orders and delivery\naddresses with a free account.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                Navigator.pushReplacementNamed(context, '/customer_login'),
+                            style: ElevatedButton.styleFrom(
+                              elevation: 0,
+                              backgroundColor: const Color(0xFF111827),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text(
+                              'Log In',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                Navigator.pushReplacementNamed(context, '/customer_signup'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF111827),
+                              side: const BorderSide(color: Color(0xFF111827), width: 1.5),
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text(
+                              'Create Account',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  _LockedFeatureList(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LockedFeatureList extends StatelessWidget {
+  final _features = const [
+    (Icons.shopping_cart_rounded, 'Save cart across sessions'),
+    (Icons.favorite_rounded, 'Add items to your wishlist'),
+    (Icons.receipt_long_rounded, 'Track your orders'),
+    (Icons.location_on_rounded, 'Save delivery addresses'),
+    (Icons.lock_rounded, 'Secure account settings'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'What you get with an account',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+          ),
+          const SizedBox(height: 16),
+          ..._features.map(
+            (f) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(f.$1, size: 18, color: Colors.grey.shade500),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    f.$2,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.lock_outline_rounded, size: 14, color: Colors.grey.shade400),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _AuthenticatedProfile extends StatelessWidget {
+  final String documentId;
+  final Map<String, dynamic> data;
+
+  const _AuthenticatedProfile({required this.documentId, required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[300],
+      body: Stack(
+        children: [
+          Container(
+            height: 200,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [Colors.yellow, Colors.brown]),
+            ),
+          ),
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                centerTitle: true,
+                pinned: true,
+                elevation: 0,
+                backgroundColor: Colors.white,
+                expandedHeight: 140,
+                flexibleSpace: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return FlexibleSpaceBar(
+                      title: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: constraints.biggest.height <= 120 ? 1 : 0,
+                        child: const Text("Account", style: TextStyle(color: Colors.black)),
+                      ),
+                      background: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(colors: [Colors.yellow, Colors.brown]),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8, left: 30),
+                          child: Row(
+                            children: [
+                              data['profileImage'] == '' || data['profileImage'] == null
+                                  ? const CircleAvatar(
+                                      radius: 50,
+                                      backgroundImage: AssetImage('images/inapp/guest.jpg'),
+                                    )
+                                  : CircleAvatar(
+                                      radius: 50,
+                                      backgroundImage: NetworkImage(data['profileImage']),
+                                    ),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 25),
+                                child: Text(
+                                  data['name'] == '' || data['name'] == null
+                                      ? "GUEST"
+                                      : data['name'].toString().toUpperCase(),
+                                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    Container(
+                      height: 80,
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(30),
+                                bottomLeft: Radius.circular(30),
+                              ),
+                            ),
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        CartScreen(back: const AppbarBackButton()),
+                                  ),
+                                );
+                              },
+                              child: SizedBox(
+                                height: 40,
+                                width: MediaQuery.of(context).size.width * 0.2,
+                                child: const Center(
+                                  child: Text(
+                                    'Cart',
+                                    style: TextStyle(color: Colors.yellow, fontSize: 24),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            color: Colors.yellow,
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const CustomerOrders()),
+                                );
+                              },
+                              child: SizedBox(
+                                height: 40,
+                                width: MediaQuery.of(context).size.width * 0.2,
+                                child: const Center(
+                                  child: Text(
+                                    'Orders',
+                                    style: TextStyle(color: Colors.black54, fontSize: 20),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.only(
+                                topRight: Radius.circular(30),
+                                bottomRight: Radius.circular(30),
+                              ),
+                            ),
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const WishListScreen()),
+                                );
+                              },
+                              child: SizedBox(
+                                height: 40,
+                                width: MediaQuery.of(context).size.width * 0.2,
+                                child: const Center(
+                                  child: Text(
+                                    'WishList',
+                                    style: TextStyle(color: Colors.yellow, fontSize: 20),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      color: Colors.grey[300],
+                      child: Column(
+                        children: [
+                          const SizedBox(
+                            height: 150,
+                            child: Image(image: AssetImage('images/inapp/logo.jpg')),
+                          ),
+                          ProfileHeaderLabel(headerLabel: "  Account Info  "),
+                          Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Container(
+                              height: 260,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(
+                                children: [
+                                  RepeatedListTile(
+                                    title: 'Email Address',
+                                    subtitle: data['email'] == '' || data['email'] == null
+                                        ? 'Example@email.com'
+                                        : data['email'].toString().toLowerCase(),
+                                    icon: Icons.email,
+                                  ),
+                                  YellowDivider(),
+                                  RepeatedListTile(
+                                    title: 'Phone No.',
+                                    subtitle: data['phone'] == '' || data['phone'] == null
+                                        ? '+1234567890'
+                                        : data['phone'],
+                                    icon: Icons.phone,
+                                  ),
+                                  YellowDivider(),
+                                  RepeatedListTile(
+                                    title: 'Address Book',
+                                    subtitle: data['address'] == null || data['address'] == ''
+                                        ? 'No saved addresses'
+                                        : data['address'],
+                                    icon: Icons.location_pin,
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const AddressBookScreen()),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          ProfileHeaderLabel(headerLabel: "  Account Settings  "),
+                          Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Container(
+                              height: 260,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(
+                                children: [
+                                  RepeatedListTile(
+                                    title: "Edit Profile",
+                                    subtitle: "",
+                                    icon: Icons.edit,
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => EditProfileScreen(
+                                            documentId: documentId,
+                                            currentData: data,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  YellowDivider(),
+                                  RepeatedListTile(
+                                    title: "Change Password",
+                                    icon: Icons.lock,
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const ChangePasswordScreen(),
+                                      ),
+                                    ),
+                                  ),
+                                  YellowDivider(),
+                                  RepeatedListTile(
+                                    title: 'Log Out',
+                                    icon: Icons.logout,
+                                    onPressed: () async {
+                                      MyAlertDialog.showMyDialog(
+                                        context: context,
+                                        title: "Log Out",
+                                        content: "Are you sure you want to log out?",
+                                        tabNo: () => Navigator.pop(context),
+                                        tabYes: () async {
+                                          await FirebaseAuth.instance.signOut();
+                                          Navigator.pop(context);
+                                          Navigator.pushReplacementNamed(
+                                            context,
+                                            '/welcome_screen',
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 class EditProfileScreen extends StatefulWidget {
   final String documentId;

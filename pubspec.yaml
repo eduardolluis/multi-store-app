@@ -62,6 +62,7 @@ dependencies:
   flutter_paypal_payment: ^1.0.8
   flutter_paypal_payment_plus: ^1.1.0
   google_sign_in: '>=6.0.0 <7.0.0'
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:

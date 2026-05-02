@@ -8,6 +8,7 @@ import 'package:multi_store_app/minor_screens/fullscreen_view.dart';
 import 'package:multi_store_app/models/product_model.dart';
 import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
+import 'package:multi_store_app/utilities/guest_guard.dart';
 import 'package:multi_store_app/widgets/appbar_widgets.dart';
 import 'package:multi_store_app/widgets/snackbar_widget.dart';
 import 'package:multi_store_app/widgets/yellow_button_widget.dart';
@@ -40,6 +41,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final discount = (widget.productList['discount'] as num?)?.toInt() ?? 0;
     final salePrice = computeSalePrice(widget.productList);
     final hasDiscount = discount > 0 && discount <= 100;
+    final guest = isGuestUser();
 
     var existingItemCart = context.read<Cart>().getItems.firstWhereOrNull(
       (product) => product.documentId == widget.productList['productId'],
@@ -180,6 +182,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                             IconButton(
                               onPressed: () {
+                                if (guest) {
+                                  showGuestLoginPrompt(context);
+                                  return;
+                                }
                                 var existingItemWishlist = context
                                     .read<Wish>()
                                     .getWishItems
@@ -202,14 +208,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         widget.productList['cid'],
                                       );
                               },
-                              icon:
-                                  context.watch<Wish>().getWishItems.firstWhereOrNull(
-                                        (product) =>
-                                            product.documentId == widget.productList['productId'],
-                                      ) !=
-                                      null
-                                  ? const Icon(Icons.favorite, color: Colors.red, size: 30)
-                                  : const Icon(Icons.favorite_outline, color: Colors.red, size: 30),
+                              icon: guest
+                                  ? Icon(
+                                      Icons.favorite_outline,
+                                      color: Colors.grey.shade400,
+                                      size: 30,
+                                    )
+                                  : (context.watch<Wish>().getWishItems.firstWhereOrNull(
+                                              (product) =>
+                                                  product.documentId ==
+                                                  widget.productList['productId'],
+                                            ) !=
+                                            null
+                                        ? const Icon(Icons.favorite, color: Colors.red, size: 30)
+                                        : const Icon(
+                                            Icons.favorite_outline,
+                                            color: Colors.red,
+                                            size: 30,
+                                          )),
                             ),
                           ],
                         ),
@@ -324,8 +340,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ],
                   ),
                   YellowButton(
-                    label: existingItemCart != null ? 'Added to cart' : 'ADD TO CART',
+                    label: guest
+                        ? 'Sign in to buy'
+                        : (existingItemCart != null ? 'Added to cart' : 'ADD TO CART'),
                     onPressed: () {
+                      if (guest) {
+                        showGuestLoginPrompt(context);
+                        return;
+                      }
                       if (widget.productList['quantity'] == 0) {
                         MyMessageHandler.showSnackBar(scaffoldKey, 'This Item is out of Stock');
                       } else if (existingItemCart != null) {

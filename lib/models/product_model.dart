@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:multi_store_app/minor_screens/edit_product.dart';
 import 'package:multi_store_app/minor_screens/product_detail.dart';
 import 'package:multi_store_app/providers/wish_providers.dart';
+import 'package:multi_store_app/utilities/guest_guard.dart';
 import 'package:provider/provider.dart';
 
 double computeSalePrice(dynamic products) {
@@ -86,7 +87,6 @@ class ProductModel extends StatelessWidget {
                     ),
                 ],
               ),
-
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
@@ -126,7 +126,6 @@ class ProductModel extends StatelessWidget {
                             ),
                           ],
                         ),
-
                         isOwner
                             ? IconButton(
                                 onPressed: () => _goToEdit(context, products),
@@ -152,12 +151,11 @@ class ProductModel extends StatelessWidget {
       ),
     );
   }
+
   void _goToEdit(BuildContext context, dynamic products) async {
     final docId = products['productId']?.toString() ?? '';
     if (docId.isEmpty) return;
-
     final data = Map<String, dynamic>.from(products as Map);
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -194,6 +192,11 @@ class _WishlistButton extends StatelessWidget {
 
     return IconButton(
       onPressed: () {
+        // Block guests
+        if (isGuestUser()) {
+          showGuestLoginPrompt(context);
+          return;
+        }
         if (inWishlist) {
           context.read<Wish>().removeThis(productId);
         } else {
@@ -209,7 +212,11 @@ class _WishlistButton extends StatelessWidget {
           );
         }
       },
-      icon: Icon(inWishlist ? Icons.favorite : Icons.favorite_outline, color: Colors.red, size: 30),
+      icon: Icon(
+        inWishlist ? Icons.favorite : Icons.favorite_outline,
+        color: isGuestUser() ? Colors.grey.shade400 : Colors.red,
+        size: 30,
+      ),
     );
   }
 }
