@@ -10,7 +10,7 @@ import 'package:multi_store_app/providers/cart_provider.dart';
 import 'package:multi_store_app/widgets/animated_widgets.dart';
 import 'package:multi_store_app/widgets/skip_widgets.dart';
 import 'package:provider/provider.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EnhancedCustomerHomeScreen extends StatefulWidget {
   const EnhancedCustomerHomeScreen({super.key});
@@ -25,7 +25,13 @@ class _EnhancedCustomerHomeScreenState extends State<EnhancedCustomerHomeScreen>
   late AnimationController _navBarCtrl;
   late Animation<double> _navBarSlide;
 
+  // ── Splash control ──────────────────────────────────────────────────────────
+  bool _splashChecked = false;
+  bool _showSplash = false;
+
   String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  static const _splashKey = 'duck_store_splash_shown';
 
   @override
   void initState() {
@@ -36,6 +42,23 @@ class _EnhancedCustomerHomeScreenState extends State<EnhancedCustomerHomeScreen>
       end: 0,
     ).animate(CurvedAnimation(parent: _navBarCtrl, curve: Curves.easeOutCubic));
     _navBarCtrl.forward();
+    _checkSplash();
+  }
+
+  /// Show splash only once — persisted in SharedPreferences
+  Future<void> _checkSplash() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final alreadyShown = prefs.getBool(_splashKey) ?? false;
+      if (!alreadyShown) {
+        await prefs.setBool(_splashKey, true);
+        if (mounted) setState(() => _showSplash = true);
+      }
+    } catch (_) {
+      // If prefs fail, just don't show splash
+    } finally {
+      if (mounted) setState(() => _splashChecked = true);
+    }
   }
 
   @override
@@ -43,6 +66,7 @@ class _EnhancedCustomerHomeScreenState extends State<EnhancedCustomerHomeScreen>
     _navBarCtrl.dispose();
     super.dispose();
   }
+
   static const _splashSlides = [
     SplashSlide(
       title: 'Welcome to\nDuck Store',
@@ -66,6 +90,13 @@ class _EnhancedCustomerHomeScreenState extends State<EnhancedCustomerHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Wait until we know whether to show splash
+    if (!_splashChecked) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF111827))),
+      );
+    }
+
     final tabs = [
       const EnhancedHomeScreen(),
       const CategoryScreen(),
@@ -74,26 +105,30 @@ class _EnhancedCustomerHomeScreenState extends State<EnhancedCustomerHomeScreen>
       ProfileScreen(documentId: _uid),
     ];
 
-    return SplashAdScreen(
-      slides: _splashSlides,
-      child: Scaffold(
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
-          child: KeyedSubtree(key: ValueKey(_selectedIndex), child: tabs[_selectedIndex]),
-        ),
-        bottomNavigationBar: AnimatedBuilder(
-          animation: _navBarSlide,
-          builder: (_, child) =>
-              Transform.translate(offset: Offset(0, _navBarSlide.value), child: child),
-          child: _EnhancedBottomNav(
-            selectedIndex: _selectedIndex,
-            cartCount: context.watch<Cart>().getItems.length,
-            onTap: (i) => setState(() => _selectedIndex = i),
-          ),
+    final homeContent = Scaffold(
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
+        child: KeyedSubtree(key: ValueKey(_selectedIndex), child: tabs[_selectedIndex]),
+      ),
+      bottomNavigationBar: AnimatedBuilder(
+        animation: _navBarSlide,
+        builder: (_, child) =>
+            Transform.translate(offset: Offset(0, _navBarSlide.value), child: child),
+        child: _EnhancedBottomNav(
+          selectedIndex: _selectedIndex,
+          cartCount: context.watch<Cart>().getItems.length,
+          onTap: (i) => setState(() => _selectedIndex = i),
         ),
       ),
     );
+
+    // Only wrap in splash if this is the first ever launch
+    if (_showSplash) {
+      return SplashAdScreen(slides: _splashSlides, child: homeContent);
+    }
+
+    return homeContent;
   }
 }
 
@@ -257,6 +292,7 @@ class _CartNavItem extends StatefulWidget {
   final int index;
   final int selectedIndex;
   final ValueChanged<int> onTap;
+
   const _CartNavItem({
     required this.count,
     required this.index,

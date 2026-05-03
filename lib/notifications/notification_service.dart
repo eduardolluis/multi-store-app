@@ -15,10 +15,9 @@ class NotificationService {
 
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-  static const String _channelId = 'multi_store_high_importance';
-  static const String _channelName = 'Multi Store Notifications';
-  static const String _channelDescription =
-      'Notificaciones de pedidos, ofertas y tiendas que sigues';
+  static const String _channelId = 'duck_store_high_importance';
+  static const String _channelName = 'Duck Store Notifications';
+  static const String _channelDescription = 'Order updates, offers, and stores you follow';
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     _channelId,
@@ -29,27 +28,29 @@ class NotificationService {
     enableVibration: true,
   );
 
+  bool _initialized = false;
+
   Future<void> initialize() async {
+    if (_initialized) return;
+    _initialized = true;
+
     await _createAndroidChannel();
-    await _initializeLocalNotifications();
+    await _initLocalNotifications();
     await _requestPermissions();
 
-    _listenForegroundMessages();
+    _listenForeground();
     _handleNotificationOpenedApp();
     await _handleInitialMessage();
   }
 
   Future<void> _createAndroidChannel() async {
     if (!Platform.isAndroid) return;
-
     await _localNotifications
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(_channel);
-
-    print('✅ Canal de notificaciones creado: $_channelName');
   }
 
-  Future<void> _initializeLocalNotifications() async {
+  Future<void> _initLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
@@ -57,11 +58,10 @@ class NotificationService {
       requestSoundPermission: false,
     );
 
-    const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
-
     await _localNotifications.initialize(
-      settings: initSettings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
+      settings: const InitializationSettings(android: androidSettings, iOS: iosSettings),
+      onDidReceiveNotificationResponse: _onLocalTap,
+      onDidReceiveBackgroundNotificationResponse: _onLocalBackgroundTap,
     );
   }
 
@@ -72,28 +72,24 @@ class NotificationService {
       sound: true,
       provisional: false,
     );
+    debugPrint('🔔 Notification permission: ${settings.authorizationStatus}');
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('✅ Permiso de notificaciones: CONCEDIDO');
-    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-      print('⚠️ Permiso de notificaciones: PROVISIONAL');
-    } else {
-      print('❌ Permiso de notificaciones: DENEGADO');
+    if (Platform.isIOS) {
+      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
     }
   }
 
-  void _listenForegroundMessages() {
+  void _listenForeground() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('📩 [FOREGROUND] Mensaje recibido');
-      print('Título: ${message.notification?.title}');
-      print('Cuerpo: ${message.notification?.body}');
-      print('Data: ${message.data}');
-
+      debugPrint('📩 [FOREGROUND] ${message.notification?.title}');
       final notification = message.notification;
-
       if (notification != null) {
-        _showHeadsUpNotification(
-          title: notification.title ?? 'Multi Store',
+        _showHeadsUp(
+          title: notification.title ?? 'Duck Store',
           body: notification.body ?? '',
           payload: message.data['route'],
         );
@@ -101,11 +97,23 @@ class NotificationService {
     });
   }
 
-  Future<void> _showHeadsUpNotification({
-    required String title,
-    required String body,
-    String? payload,
-  }) async {
+  void _handleNotificationOpenedApp() {
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('👆 [BG TAP] route=${message.data['route']}');
+      _navigateTo(message.data['route']);
+    });
+  }
+
+  Future<void> _handleInitialMessage() async {
+    final initial = await FirebaseMessaging.instance.getInitialMessage();
+    if (initial != null) {
+      debugPrint('🚀 [TERMINATED TAP] route=${initial.data['route']}');
+      await Future.delayed(const Duration(milliseconds: 800));
+      _navigateTo(initial.data['route']);
+    }
+  }
+
+  Future<void> _showHeadsUp({required String title, required String body, String? payload}) async {
     const androidDetails = AndroidNotificationDetails(
       _channelId,
       _channelName,
@@ -115,66 +123,42 @@ class NotificationService {
       playSound: true,
       enableVibration: true,
       icon: '@mipmap/ic_launcher',
+      visibility: NotificationVisibility.public,
     );
-
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
     );
 
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
-
     await _localNotifications.show(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title: title,
       body: body,
-      notificationDetails: details,
+      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
       payload: payload,
     );
   }
 
-  void _handleNotificationOpenedApp() {
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('👆 [BACKGROUND TAP] Usuario tocó notificación');
-      _navigateFromMessage(message.data);
-    });
-  }
-
-  Future<void> _handleInitialMessage() async {
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-
-    if (initialMessage != null) {
-      print('🚀 [TERMINATED TAP] App abierta desde notificación');
-
-      Future.delayed(const Duration(seconds: 1), () {
-        _navigateFromMessage(initialMessage.data);
-      });
+  void _onLocalTap(NotificationResponse response) {
+    if (response.payload != null && response.payload!.isNotEmpty) {
+      _navigateTo(response.payload);
     }
   }
 
-  void _onNotificationTapped(NotificationResponse response) {
-    final payload = response.payload;
+  @pragma('vm:entry-point')
+  static void _onLocalBackgroundTap(NotificationResponse response) {}
 
-    if (payload != null && payload.isNotEmpty) {
-      print('👆 [FOREGROUND TAP] Navegando a: $payload');
-      navigatorKey.currentState?.pushNamed(payload);
-    }
-  }
-
-  void _navigateFromMessage(Map<String, dynamic> data) {
-    final route = data['route'];
-
-    if (route != null && route.toString().isNotEmpty) {
-      navigatorKey.currentState?.pushNamed(route.toString());
-    }
+  void _navigateTo(String? route) {
+    if (route == null || route.isEmpty) return;
+    navigatorKey.currentState?.pushNamed(route);
   }
 
   Future<void> showLocalNotification({
     required String title,
     required String body,
     String? payload,
-  }) async {
-    await _showHeadsUpNotification(title: title, body: body, payload: payload);
-  }
+  }) => _showHeadsUp(title: title, body: body, payload: payload);
+
+  Future<String?> getToken() => FirebaseMessaging.instance.getToken();
 }

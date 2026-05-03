@@ -28,6 +28,7 @@ import 'package:multi_store_app/sql/product_notes_provider.dart';
 import 'package:multi_store_app/notifications/background_message_handler.dart';
 import 'package:multi_store_app/notifications/notification_service.dart';
 import 'package:multi_store_app/notifications/fcm_token_service.dart';
+import 'package:multi_store_app/theme/app_theme.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
@@ -53,6 +54,7 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
+  // Initialize notification service ONCE at startup
   await NotificationService().initialize();
 
   FcmTokenService().listenToTokenRefresh();
@@ -81,20 +83,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: NotificationService.navigatorKey,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF111827),
-          brightness: Brightness.light,
-        ),
-        fontFamily: 'Acme',
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          },
-        ),
-      ),
+    theme: AppTheme.light,
       home: AuthWrapper(
         onAuthenticated: (User user) {
           FcmTokenService().saveTokenToFirestore();
