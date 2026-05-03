@@ -78,7 +78,7 @@ class RecentlyViewedWidget extends StatelessWidget {
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                         child: imageUrl.isNotEmpty
                             ? Image.network(imageUrl, height: 110, width: 120, fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(height: 110, color: Colors.grey[100], child: const Icon(Icons.image_not_supported)))
+                                errorBuilder: (_, _, _) => Container(height: 110, color: Colors.grey[100], child: const Icon(Icons.image_not_supported)))
                             : Container(height: 110, color: Colors.grey[100], child: const Icon(Icons.image_not_supported)),
                       ),
                       Padding(

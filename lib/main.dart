@@ -25,20 +25,26 @@ import 'package:multi_store_app/sql/sql_wish_provider.dart';
 import 'package:multi_store_app/sql/search_history_provider.dart';
 import 'package:multi_store_app/sql/recently_viewed_provider.dart';
 import 'package:multi_store_app/sql/product_notes_provider.dart';
+import 'package:multi_store_app/notifications/background_message_handler.dart';
+import 'package:multi_store_app/notifications/notification_service.dart';
+import 'package:multi_store_app/notifications/fcm_token_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await dotenv.load(fileName: '.env');
+
   Stripe.publishableKey = STRIPE_PUBLISHABLE_KEY;
   Stripe.merchantIdentifier = 'merchant.flutter.stripe.test';
   Stripe.urlScheme = 'flutterstripe';
   await Stripe.instance.applySettings();
 
-  await dotenv.load(fileName: '.env');
-
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   await FirebaseAppCheck.instance.activate(androidProvider: AndroidProvider.debug);
 
@@ -47,27 +53,20 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
+  await NotificationService().initialize();
+
+  FcmTokenService().listenToTokenRefresh();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => Cart()),
         ChangeNotifierProvider(create: (_) => Wish()),
-
-        ChangeNotifierProvider(
-          create: (_) => SqlCartProvider()..loadFromDb(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => SqlWishProvider()..loadFromDb(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => SearchHistoryProvider()..loadFromDb(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => RecentlyViewedProvider()..loadFromDb(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ProductNotesProvider(),
-        ),
+        ChangeNotifierProvider(create: (_) => SqlCartProvider()..loadFromDb()),
+        ChangeNotifierProvider(create: (_) => SqlWishProvider()..loadFromDb()),
+        ChangeNotifierProvider(create: (_) => SearchHistoryProvider()..loadFromDb()),
+        ChangeNotifierProvider(create: (_) => RecentlyViewedProvider()..loadFromDb()),
+        ChangeNotifierProvider(create: (_) => ProductNotesProvider()),
       ],
       child: const MyApp(),
     ),
@@ -81,6 +80,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      navigatorKey: NotificationService.navigatorKey,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -96,7 +96,10 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: AuthWrapper(
-        onAuthenticated: (User user) => const WelcomeScreen(),
+        onAuthenticated: (User user) {
+          FcmTokenService().saveTokenToFirestore();
+          return const WelcomeScreen();
+        },
         unauthenticatedWidget: const WelcomeScreen(),
       ),
       routes: {
